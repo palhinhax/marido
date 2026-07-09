@@ -624,6 +624,22 @@ export const SEO_ROLES: SeoRole[] = [
     categorySlug: "pintura-e-paredes",
   },
   {
+    slug: "jardineiro",
+    label: "Jardineiro",
+    h1: "Jardineiro",
+    intro:
+      "Corte de relva, sebes aparadas, limpeza de quintais e caleiras para um exterior sempre cuidado.",
+    categorySlug: "jardim-e-exterior",
+  },
+  {
+    slug: "faz-tudo",
+    label: "Faz-Tudo",
+    h1: "Faz-Tudo",
+    intro:
+      "Um profissional para pequenas reparações, montagens e arranjos domésticos, com preço definido e marcação online.",
+    categorySlug: null,
+  },
+  {
     slug: "servicos-domesticos",
     label: "Serviços Domésticos",
     h1: "Serviços Domésticos",

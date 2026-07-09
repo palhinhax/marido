@@ -19,8 +19,13 @@ import {
   getSeoRole,
   getCategoryBySlug,
   ALL_SERVICES,
+  formatPrice,
 } from "@/lib/data/catalog";
-import { ALL_MUNICIPALITIES, getLocationBySlug } from "@/lib/data/locations";
+import {
+  ALL_MUNICIPALITIES,
+  SEO_SERVICE_CITY_SLUGS,
+  getLocationBySlug,
+} from "@/lib/data/locations";
 
 // role × location combinations
 export function generateStaticParams() {
@@ -100,6 +105,20 @@ export default function RoleLocationPage({
 
   // nearby municipalities in the same district for internal linking
   const nearby = loc.district.municipalities.filter((m) => m.slug !== loc.slug);
+
+  // big cities have dedicated service × city pages worth deep-linking to
+  const hasCityServicePages = SEO_SERVICE_CITY_SLUGS.includes(loc.slug);
+
+  const serviceNames = services.map((s) => s.name.toLowerCase());
+  const namesList =
+    serviceNames.length > 1
+      ? `${serviceNames.slice(0, -1).join(", ")} e ${serviceNames[serviceNames.length - 1]}`
+      : (serviceNames[0] ?? "");
+  const districtSuffix =
+    loc.name === loc.district.name
+      ? "e em todo o distrito"
+      : `e em todo o distrito de ${loc.district.name}`;
+  const localIntro = `Procura ${role.label.toLowerCase()} em ${loc.name}? No Vizinho encontra profissionais avaliados para ${namesList}, em ${loc.name} ${districtSuffix}. O preço é indicado antes de marcar — a maioria dos serviços tem valor fixo ou "a partir de" — e pode enviar fotos do problema para receber uma estimativa mais precisa. Faça o pedido online, escolha o horário que lhe dá jeito e receba resposta de um profissional disponível na sua zona.`;
 
   const faqs = [
     {
@@ -192,6 +211,33 @@ export default function RoleLocationPage({
             />
           ))}
         </div>
+      </section>
+
+      {/* Local SEO text + deep links to service × city pages */}
+      <section className="rounded-2xl border bg-card p-6 sm:p-8">
+        <h2 className="text-2xl font-bold">
+          {role.label} em {loc.name}: preços e serviços mais pedidos
+        </h2>
+        <p className="mt-3 text-muted-foreground">{localIntro}</p>
+        {hasCityServicePages && (
+          <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+            {services.map((s) => (
+              <li key={s.slug}>
+                <Link
+                  href={`/servicos/${s.category.slug}/${s.slug}/${loc.slug}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-background px-4 py-3 text-sm font-medium transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  <span>
+                    {s.name} em {loc.name}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-primary">
+                    {formatPrice(s.basePrice, s.priceType)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <HowItWorks />

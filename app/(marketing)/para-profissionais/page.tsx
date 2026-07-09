@@ -7,6 +7,7 @@ import {
   Wallet,
   Star,
   CheckCircle2,
+  Euro,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FAQSection } from "@/components/seo/faq-section";
@@ -96,6 +97,43 @@ export default async function ParaProfissionaisPage() {
             Tornar-me profissional
           </Button>
         </Link>
+      </section>
+
+      {/* Earnings example */}
+      <section className="rounded-2xl border bg-card p-6 sm:p-8">
+        <div className="grid items-center gap-8 sm:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-bold">Quanto pode ganhar?</h2>
+            <p className="mt-3 text-muted-foreground">
+              Os preços são definidos por serviço e o valor é seu. Um exemplo
+              realista de um dia de trabalho:
+            </p>
+            <div className="mt-5 rounded-xl border bg-accent/40 p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Euro className="h-4 w-4 text-primary" />3 serviços num dia ×
+                35€ em média
+              </div>
+              <p className="mt-1 text-3xl font-bold text-primary">105€/dia</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Exemplo ilustrativo. Os valores variam consoante os serviços, a
+                zona e a sua disponibilidade.
+              </p>
+            </div>
+          </div>
+          <ul className="space-y-3">
+            {[
+              "Registo gratuito, sem mensalidade inicial",
+              "Receba pedidos apenas perto de si",
+              "Escolha os serviços, as zonas e os horários",
+              "Ideal para faz-tudo, canalizadores, eletricistas, montadores, pintores e jardineiros",
+            ].map((t) => (
+              <li key={t} className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <section>

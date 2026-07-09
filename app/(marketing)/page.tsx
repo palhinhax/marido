@@ -2,10 +2,11 @@ import Link from "next/link";
 import {
   ShieldCheck,
   Tag,
+  Camera,
   Headphones,
-  Star,
   ArrowRight,
   BadgeCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSearch } from "@/components/site/hero-search";
@@ -71,7 +72,7 @@ const HOME_FAQS = [
   {
     question: "Em que zonas está disponível?",
     answer:
-      "Estamos a crescer em Portugal, com maior cobertura nas áreas metropolitanas de Lisboa e Porto e nos principais concelhos do país.",
+      "A maior cobertura está nas áreas metropolitanas de Lisboa e Porto, onde a resposta é mais rápida. Nas restantes zonas do país estamos a crescer: crie o pedido e confirmamos a disponibilidade de um profissional antes de qualquer compromisso.",
   },
 ];
 
@@ -104,6 +105,18 @@ export default function HomePage() {
           </div>
           <div className="mx-auto mt-8 max-w-3xl">
             <HeroSearch />
+          </div>
+          <div className="mx-auto mt-5 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {[
+              "Pedido gratuito e sem compromisso",
+              "Preço confirmado antes do serviço",
+              "Maior cobertura em Lisboa e Porto",
+            ].map((t) => (
+              <span key={t} className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                {t}
+              </span>
+            ))}
           </div>
         </div>
       </section>
@@ -199,28 +212,28 @@ export default function HomePage() {
 
         {/* Trust */}
         <section>
-          <h2 className="text-2xl font-bold">Porquê o Vizinho</h2>
+          <h2 className="text-2xl font-bold">Porque pode confiar</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: Star,
-                title: "Profissionais avaliados",
-                text: "Avaliações reais de clientes após cada serviço.",
+                icon: ShieldCheck,
+                title: "Profissionais aprovados manualmente",
+                text: "Cada perfil é verificado pela nossa equipa antes de receber pedidos, e avaliado por clientes após cada serviço.",
               },
               {
                 icon: Tag,
-                title: "Preços transparentes",
-                text: "Preço à partida ou fixo, mostrado antes de marcar.",
+                title: "Preço confirmado antes do serviço",
+                text: "Preço à partida ou fixo, mostrado antes de marcar. Nada avança sem confirmação.",
               },
               {
-                icon: ShieldCheck,
-                title: "Marcação segura",
-                text: "Pedidos organizados e histórico sempre acessível.",
+                icon: Camera,
+                title: "Envie fotos antes da marcação",
+                text: "Pode juntar fotos do problema para uma estimativa mais precisa, sem visitas desnecessárias.",
               },
               {
                 icon: Headphones,
-                title: "Suporte próximo",
-                text: "Ajuda quando precisa, em português.",
+                title: "Suporte em português",
+                text: "Ajuda próxima quando precisa, com o histórico do pedido sempre acessível.",
               },
             ].map((t) => (
               <div key={t.title} className="rounded-xl border bg-card p-5">
