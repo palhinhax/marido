@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Vizinho — Portuguese home-services marketplace
+// Prisma schema. Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,21 +10,368 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  CLIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum PriceType {
+  FIXED // Preço fixo
+  STARTING // A partir de
+  HOURLY // Preço à hora
+  QUOTE // Orçamento sob avaliação
+}
+
+enum BookingStatus {
+  DRAFT
+  PENDING
+  ACCEPTED
+  REJECTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULE_REQUESTED
+  NO_SHOW
+}
+
+enum Urgency {
+  NORMAL // Normal
+  URGENT // Urgente
+  TODAY // Hoje, se possível
+}
+
+enum PropertyType {
+  APARTMENT // Apartamento
+  HOUSE // Moradia
+  SHOP // Loja
+  OFFICE // Escritório
+  OTHER // Outro
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum AvailabilityExceptionType {
+  AVAILABLE // Extra hours on a specific date
+  UNAVAILABLE // Blocked/holiday
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_ACCEPTED
+  BOOKING_REJECTED
+  BOOKING_COMPLETED
+  REVIEW_REQUEST
+  GENERIC
+}
+
+// ---------------------------------------------------------------------------
+// Users & profiles
+// ---------------------------------------------------------------------------
+
 model User {
   id           String   @id @default(cuid())
   name         String?
   email        String   @unique
+  phone        String?
   passwordHash String
+  role         Role     @default(CLIENT)
   createdAt    DateTime @default(now())
-  posts        Post[]
+  updatedAt    DateTime @updatedAt
+
+  clientProfile       ClientProfile?
+  professionalProfile ProfessionalProfile?
+  bookingsAsClient    Booking[]            @relation("ClientBookings")
+  reviewsWritten      Review[]             @relation("ReviewAuthor")
+  notifications       Notification[]
 }
 
-model Post {
+model ClientProfile {
   id        String   @id @default(cuid())
-  title     String
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ProfessionalProfile {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug            String         @unique
+  displayName     String
+  headline        String?
+  description     String?
+  photoUrl        String?
+  phone           String?
+  whatsapp        String?
+  website         String?
+  nif             String?
+  companyName     String?
+  yearsExperience Int?
+  isVerified      Boolean        @default(false)
+  isFeatured      Boolean        @default(false)
+  approvalStatus  ApprovalStatus @default(PENDING)
+  ratingAverage   Float          @default(0)
+  ratingCount     Int            @default(0)
+  completedJobs   Int            @default(0)
+  onboardingStep  Int            @default(1)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  services      ProfessionalService[]
+  serviceAreas  ProfessionalServiceArea[]
+  availability  AvailabilityRule[]
+  exceptions    AvailabilityException[]
+  bookings      Booking[]                 @relation("ProfessionalBookings")
+  reviews       Review[]                  @relation("ReviewTarget")
+  documents     VerificationDocument[]
+}
+
+model VerificationDocument {
+  id             String              @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  type           String // id | insurance | certificate | company
+  fileUrl        String
+  createdAt      DateTime            @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+model ServiceCategory {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  description    String?
+  icon           String? // lucide icon name
+  seoTitle       String?
+  seoDescription String?
+  order          Int       @default(0)
+  services       Service[]
+}
+
+model Service {
+  id                       String    @id @default(cuid())
+  categoryId               String
+  category                 ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name                     String
+  slug                     String    @unique
+  shortDescription         String
+  description              String
+  basePrice                Int? // in EUR, whole euros; null for QUOTE
+  priceType                PriceType @default(STARTING)
+  estimatedDurationMinutes Int       @default(60)
+  included                 String[] // "O que está incluído"
+  notIncluded              String[] // "O que não está incluído"
+  requiresPhotos           Boolean   @default(false)
+  requiresQuote            Boolean   @default(false)
+  requiredClientInfo       String?
+  seoTitle                 String?
+  seoDescription           String?
+  professionalRole         String? // e.g. "Canalizador" — used in SEO landing slugs
+  isActive                 Boolean   @default(true)
+  order                    Int       @default(0)
+
+  extras               ServiceExtra[]
+  faqs                 ServiceFaq[]
+  bookings             Booking[]
+  professionalServices ProfessionalService[]
+}
+
+model ServiceExtra {
+  id        String  @id @default(cuid())
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int
+}
+
+model ServiceFaq {
+  id        String  @id @default(cuid())
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  order     Int     @default(0)
+}
+
+// ---------------------------------------------------------------------------
+// Professional ↔ service / area / availability
+// ---------------------------------------------------------------------------
+
+model ProfessionalService {
+  id             String              @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service             @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customPrice    Int? // overrides service.basePrice if allowed
+
+  @@unique([professionalId, serviceId])
+}
+
+model ProfessionalServiceArea {
+  id             String              @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  district       String
+  municipality   String? // null = whole district
+  municipalitySlug String?
+
+  @@index([district, municipality])
+}
+
+model AvailabilityRule {
+  id             String              @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int // 1 = Monday ... 7 = Sunday
+  startTime      String // "HH:MM"
+  endTime        String // "HH:MM"
+  slotDurationMinutes Int   @default(60)
+  isAvailable    Boolean  @default(true)
+
+  @@index([professionalId, dayOfWeek])
+}
+
+model AvailabilityException {
+  id             String                    @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  date           DateTime // day of the exception (date only)
+  startTime      String? // null = whole day
+  endTime        String?
+  type           AvailabilityExceptionType
+  reason         String?
+
+  @@index([professionalId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id             String               @id @default(cuid())
+  reference      String               @unique // human friendly, e.g. PJ-2K4F9A
+  clientId       String?
+  client         User?                @relation("ClientBookings", fields: [clientId], references: [id], onDelete: SetNull)
+  professionalId String?
+  professional   ProfessionalProfile? @relation("ProfessionalBookings", fields: [professionalId], references: [id], onDelete: SetNull)
+  serviceId      String
+  service        Service              @relation(fields: [serviceId], references: [id])
+
+  status BookingStatus @default(PENDING)
+
+  // Location
+  address      String
+  postalCode   String
+  city         String
+  municipality String
+  district     String
+  accessNotes  String?
+  latitude     Float?
+  longitude    Float?
+
+  // Details
+  clientDescription String
+  urgency           Urgency      @default(NORMAL)
+  propertyType      PropertyType @default(APARTMENT)
+
+  // Schedule
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+
+  // Pricing
+  estimatedPrice Int?
+  finalPrice     Int?
+  priceType      PriceType     @default(STARTING)
+  paymentStatus  PaymentStatus @default(NOT_REQUIRED)
+
+  // Contact (guest-friendly — may differ from account)
+  clientName     String
+  clientEmail    String
+  clientPhone    String
+  whatsappConsent Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos        BookingPhoto[]
+  statusHistory BookingStatusHistory[]
+  review        Review?
+
+  @@index([status])
+  @@index([district, municipality])
+  @@index([professionalId, scheduledStart])
+}
+
+model BookingPhoto {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  url       String
+}
+
+model BookingStatusHistory {
+  id        String        @id @default(cuid())
+  bookingId String
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status    BookingStatus
+  note      String?
+  createdAt DateTime      @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Reviews & notifications
+// ---------------------------------------------------------------------------
+
+model Review {
+  id             String              @id @default(cuid())
+  bookingId      String              @unique
+  booking        Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         User                @relation("ReviewAuthor", fields: [clientId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile @relation("ReviewTarget", fields: [professionalId], references: [id], onDelete: Cascade)
+  rating         Int // 1..5
+  comment        String?
+  isApproved     Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+
+  @@index([professionalId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(GENERIC)
+  title     String
+  body      String?
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
 }

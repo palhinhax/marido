@@ -2,12 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { slugify } from "@/lib/utils";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(2, "Indique o seu nome"),
+  email: z.string().email("Email inválido"),
+  password: z
+    .string()
+    .min(8, "A palavra-passe deve ter pelo menos 8 caracteres"),
+  phone: z.string().min(9, "Telefone inválido").optional().or(z.literal("")),
+  role: z.enum(["CLIENT", "PROFESSIONAL"]).default("CLIENT"),
 });
+
+async function uniqueProfessionalSlug(base: string): Promise<string> {
+  const root = slugify(base) || "profissional";
+  let slug = root;
+  let n = 1;
+  // Try suffixes until free.
+  while (await prisma.professionalProfile.findUnique({ where: { slug } })) {
+    n += 1;
+    slug = `${root}-${n}`;
+  }
+  return slug;
+}
 
 export async function POST(request: Request) {
   try {
@@ -16,20 +33,20 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { message: "Validation failed", errors: result.error.flatten().fieldErrors },
+        {
+          message: "Validação falhou",
+          errors: result.error.flatten().fieldErrors,
+        },
         { status: 400 }
       );
     }
 
-    const { name, email, password } = result.data;
+    const { name, email, password, phone, role } = result.data;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json(
-        { message: "User already exists" },
+        { message: "Já existe uma conta com este email" },
         { status: 409 }
       );
     }
@@ -40,21 +57,31 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
+        phone: phone || null,
         passwordHash,
+        role,
+        ...(role === "CLIENT"
+          ? { clientProfile: { create: { phone: phone || null } } }
+          : {
+              professionalProfile: {
+                create: {
+                  slug: await uniqueProfessionalSlug(name),
+                  displayName: name,
+                  phone: phone || null,
+                  approvalStatus: "PENDING",
+                  onboardingStep: 2,
+                },
+              },
+            }),
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
+      select: { id: true, name: true, email: true, role: true },
     });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Erro interno do servidor" },
       { status: 500 }
     );
   }

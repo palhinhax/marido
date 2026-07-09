@@ -2,32 +2,52 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
+  const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
-  const { pathname } = req.nextUrl;
+  const role = req.auth?.user?.role;
+  const { pathname } = nextUrl;
 
-  // Protected routes
-  const protectedRoutes = ["/dashboard"];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+  const isAuthRoute = ["/login", "/registar"].some((r) =>
+    pathname.startsWith(r)
   );
 
-  // Auth routes (should redirect to dashboard if logged in)
-  const authRoutes = ["/auth/login", "/auth/register"];
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  // Route groups that require authentication
+  const clientArea = pathname.startsWith("/dashboard");
+  const proArea =
+    pathname.startsWith("/profissional") &&
+    pathname !== "/profissional/registar";
+  const adminArea = pathname.startsWith("/admin");
+  const isProtected = clientArea || proArea || adminArea;
 
-  if (isProtectedRoute && !isLoggedIn) {
-    const loginUrl = new URL("/auth/login", req.url);
+  if (isProtected && !isLoggedIn) {
+    const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthRoute && isLoggedIn) {
+  // Role gating
+  if (adminArea && role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+  if (proArea && role && role !== "PROFESSIONAL" && role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  if (isAuthRoute && isLoggedIn) {
+    const dest =
+      role === "ADMIN"
+        ? "/admin"
+        : role === "PROFESSIONAL"
+          ? "/profissional"
+          : "/dashboard";
+    return NextResponse.redirect(new URL(dest, req.url));
   }
 
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
