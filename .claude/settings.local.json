@@ -7,7 +7,8 @@
       "Bash(taskkill //F //IM node.exe //T)",
       "Bash(pnpm exec *)",
       "Bash(curl -sS --max-time 15 https://www.vizinho-do-lado.com/)",
-      "Bash(curl -sS -I --max-time 10 https://www.vizinho-do-lado.com/)"
+      "Bash(curl -sS -I --max-time 10 https://www.vizinho-do-lado.com/)",
+      "Bash(git credential *)"
     ]
   }
 }
