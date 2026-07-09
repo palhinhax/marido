@@ -12,7 +12,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
         {crumbs.map((c, i) => {
           const last = i === crumbs.length - 1;
           return (
-            <li key={c.href} className="flex items-center gap-1">
+            <li key={`${i}-${c.href}`} className="flex items-center gap-1">
               {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
               {last ? (
                 <span
