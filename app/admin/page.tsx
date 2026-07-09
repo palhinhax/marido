@@ -135,8 +135,18 @@ export default async function AdminDashboard() {
             </thead>
             <tbody>
               {recentBookings.map((b) => (
-                <tr key={b.id} className="border-b last:border-0">
-                  <td className="p-3 font-mono text-xs">{b.reference}</td>
+                <tr
+                  key={b.id}
+                  className="border-b last:border-0 hover:bg-muted/40"
+                >
+                  <td className="p-3 font-mono text-xs">
+                    <Link
+                      href={`/admin/pedidos/${b.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {b.reference}
+                    </Link>
+                  </td>
                   <td className="p-3">{b.service.name}</td>
                   <td className="p-3 text-muted-foreground">
                     {b.municipality}

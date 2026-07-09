@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   CalendarClock,
   MapPinned,
@@ -10,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FAQSection } from "@/components/seo/faq-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { getCurrentUser, dashboardPathForRole } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Para profissionais — trabalhe connosco",
@@ -67,7 +69,12 @@ const FAQS = [
   },
 ];
 
-export default function ParaProfissionaisPage() {
+export default async function ParaProfissionaisPage() {
+  const user = await getCurrentUser();
+  if (user?.role === "PROFESSIONAL" || user?.role === "ADMIN") {
+    redirect(dashboardPathForRole(user.role));
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-14 px-4 py-10">
       <section className="rounded-2xl bg-primary px-6 py-12 text-primary-foreground sm:px-10">

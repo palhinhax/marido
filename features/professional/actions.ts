@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { gridToRules, type GridSelection } from "@/lib/availability";
+import { slugify } from "@/lib/utils";
 import {
   notifyBookingAccepted,
   notifyBookingRejected,
@@ -29,6 +30,7 @@ const profileSchema = z.object({
   displayName: z.string().min(2),
   headline: z.string().max(120).optional().or(z.literal("")),
   description: z.string().max(2000).optional().or(z.literal("")),
+  photoUrl: z.string().max(500).optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   whatsapp: z.string().optional().or(z.literal("")),
   website: z.string().optional().or(z.literal("")),
@@ -48,6 +50,7 @@ export async function updateProfessionalProfile(
       displayName: data.displayName,
       headline: data.headline || null,
       description: data.description || null,
+      photoUrl: data.photoUrl || null,
       phone: data.phone || null,
       whatsapp: data.whatsapp || null,
       website: data.website || null,
@@ -229,6 +232,72 @@ export async function respondToBooking(
 
   revalidatePath("/profissional/pedidos");
   revalidatePath(`/profissional/pedidos/${bookingId}`);
+  return { ok: true };
+}
+
+// --- Upgrade an existing (client) account to a professional ------------------
+async function uniqueProfessionalSlug(base: string): Promise<string> {
+  const root = slugify(base) || "profissional";
+  let slug = root;
+  let n = 1;
+  while (await prisma.professionalProfile.findUnique({ where: { slug } })) {
+    n += 1;
+    slug = `${root}-${n}`;
+  }
+  return slug;
+}
+
+export async function becomeProfessional() {
+  const user = await getCurrentUser();
+  if (!user?.id) throw new Error("Sessão inválida");
+
+  const existing = await prisma.professionalProfile.findUnique({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { name: true, phone: true, role: true },
+  });
+  // Never downgrade an admin — only a plain client becomes a professional.
+  const nextRole = dbUser?.role === "CLIENT" ? "PROFESSIONAL" : dbUser?.role;
+
+  // Idempotent: if they already have a professional profile, just ensure role.
+  if (existing) {
+    if (nextRole && nextRole !== dbUser?.role) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: nextRole },
+      });
+    }
+    return { ok: true, alreadyProfessional: true };
+  }
+
+  const slug = await uniqueProfessionalSlug(dbUser?.name ?? "profissional");
+
+  await prisma.$transaction([
+    ...(nextRole && nextRole !== dbUser?.role
+      ? [
+          prisma.user.update({
+            where: { id: user.id },
+            data: { role: nextRole },
+          }),
+        ]
+      : []),
+    prisma.professionalProfile.create({
+      data: {
+        userId: user.id,
+        slug,
+        displayName: dbUser?.name ?? "Profissional",
+        phone: dbUser?.phone ?? null,
+        approvalStatus: "PENDING",
+        onboardingStep: 2,
+      },
+    }),
+  ]);
+
+  revalidatePath("/profissional");
   return { ok: true };
 }
 

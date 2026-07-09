@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ProfessionalActions } from "@/features/admin/components/professional-actions";
+import { DeleteProfessionalButton } from "@/features/admin/components/delete-professional-button";
 import { Badge } from "@/components/ui/badge";
 import { Stars } from "@/components/stars";
 import { APPROVAL_STATUS_LABEL } from "@/lib/format";
@@ -76,7 +77,7 @@ function ProCard({
         <div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/profissionais/${pro.slug}`}
+              href={`/admin/profissionais/${pro.id}`}
               className="font-semibold hover:underline"
             >
               {pro.displayName}
@@ -104,11 +105,25 @@ function ProCard({
             <span>{pro._count.bookings} pedidos</span>
           </div>
         </div>
-        <ProfessionalActions
-          professionalId={pro.id}
-          status={pro.approvalStatus}
-          isFeatured={pro.isFeatured}
-        />
+        <div className="flex flex-col items-end gap-2">
+          <ProfessionalActions
+            professionalId={pro.id}
+            status={pro.approvalStatus}
+            isFeatured={pro.isFeatured}
+          />
+          <div className="flex gap-2">
+            <Link
+              href={`/admin/profissionais/${pro.id}`}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+            >
+              Gerir
+            </Link>
+            <DeleteProfessionalButton
+              professionalId={pro.id}
+              name={pro.displayName}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

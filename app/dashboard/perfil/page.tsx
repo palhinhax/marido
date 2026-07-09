@@ -5,7 +5,7 @@ import { ClientProfileForm } from "@/features/client/components/client-profile-f
 export const dynamic = "force-dynamic";
 
 export default async function ClientProfilePage() {
-  const user = await requireUser(["CLIENT"]);
+  const user = await requireUser();
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { name: true, email: true, phone: true },

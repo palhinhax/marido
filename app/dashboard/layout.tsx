@@ -6,6 +6,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireUser(["CLIENT"]);
+  await requireUser();
   return <DashboardShell area="client">{children}</DashboardShell>;
 }

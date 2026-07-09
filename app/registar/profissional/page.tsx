@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { RegisterForm } from "@/components/auth/register-form";
+import { BecomeProfessionalPanel } from "@/components/auth/become-professional-panel";
 import { LogoMark } from "@/components/site/logo-mark";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { SITE } from "@/lib/site";
 
 export const metadata = { title: "Registo de profissional" };
+export const dynamic = "force-dynamic";
 
 const PERKS = [
   "Receba pedidos na sua zona",
@@ -12,7 +17,19 @@ const PERKS = [
   "Construa reputação com avaliações",
 ];
 
-export default function RegisterProfessionalPage() {
+export default async function RegisterProfessionalPage() {
+  const user = await getCurrentUser();
+
+  // Anyone already holding a professional profile goes straight to their area.
+  // (Admins may also create a professional profile — they keep admin rights.)
+  if (user) {
+    const existing = await prisma.professionalProfile.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    if (existing) redirect("/profissional");
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="grid w-full max-w-4xl gap-8 lg:grid-cols-2">
@@ -37,29 +54,36 @@ export default function RegisterProfessionalPage() {
           </ul>
         </div>
 
-        {/* Form */}
+        {/* Form (guest) or upgrade panel (logged-in client) */}
         <div>
-          <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
-            <h1 className="text-2xl font-bold">Criar conta de profissional</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Comece o registo. A seguir configura o perfil e a disponibilidade.
-            </p>
-            <div className="mt-6">
-              <RegisterForm
-                role="PROFESSIONAL"
-                redirectTo="/profissional/onboarding"
-              />
+          {user ? (
+            <BecomeProfessionalPanel name={user.name || "profissional"} />
+          ) : (
+            <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+              <h1 className="text-2xl font-bold">
+                Criar conta de profissional
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Comece o registo. A seguir configura o perfil e a
+                disponibilidade.
+              </p>
+              <div className="mt-6">
+                <RegisterForm
+                  role="PROFESSIONAL"
+                  redirectTo="/profissional/onboarding"
+                />
+              </div>
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                Já tem conta?{" "}
+                <Link
+                  href="/login"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Entrar
+                </Link>
+              </p>
             </div>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Já tem conta?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-primary hover:underline"
-              >
-                Entrar
-              </Link>
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </div>

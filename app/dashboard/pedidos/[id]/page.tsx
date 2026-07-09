@@ -21,7 +21,7 @@ export default async function ClientBookingDetail({
 }: {
   params: { id: string };
 }) {
-  const user = await requireUser(["CLIENT"]);
+  const user = await requireUser();
   const booking = await prisma.booking.findUnique({
     where: { id: params.id },
     include: {

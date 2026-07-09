@@ -1,20 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { ImageUploader } from "@/components/image-uploader";
-import { updateProfessionalProfile } from "../actions";
+import { adminUpdateProfessional } from "../actions";
 
 interface ProfileData {
   displayName: string;
   headline: string;
   description: string;
-  photoUrl: string;
   phone: string;
   whatsapp: string;
   website: string;
@@ -23,13 +22,14 @@ interface ProfileData {
   yearsExperience: number | "";
 }
 
-export function ProfileForm({
+export function ProfessionalEditForm({
+  professionalId,
   initial,
-  onSaved,
 }: {
+  professionalId: string;
   initial: ProfileData;
-  onSaved?: () => void;
 }) {
+  const router = useRouter();
   const { toast } = useToast();
   const [form, setForm] = useState<ProfileData>(initial);
   const [saving, setSaving] = useState(false);
@@ -40,17 +40,21 @@ export function ProfileForm({
   async function save() {
     setSaving(true);
     try {
-      await updateProfessionalProfile({
+      await adminUpdateProfessional(professionalId, {
         ...form,
         yearsExperience:
           form.yearsExperience === ""
             ? undefined
             : Number(form.yearsExperience),
       });
-      toast({ title: "Perfil guardado" });
-      onSaved?.();
-    } catch {
-      toast({ title: "Erro ao guardar", variant: "destructive" });
+      toast({ title: "Profissional atualizado" });
+      router.refresh();
+    } catch (e) {
+      toast({
+        title: "Erro ao guardar",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -58,15 +62,6 @@ export function ProfileForm({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label>Foto de perfil</Label>
-        <ImageUploader
-          folder="profiles"
-          variant="avatar"
-          value={form.photoUrl ? [form.photoUrl] : []}
-          onChange={(urls) => set("photoUrl", urls[0] ?? "")}
-        />
-      </div>
       <div className="space-y-1.5">
         <Label>Nome público</Label>
         <Input
@@ -86,7 +81,6 @@ export function ProfileForm({
         <Label>Descrição</Label>
         <Textarea
           className="min-h-[120px]"
-          placeholder="Conte a sua experiência, especialidades e o que o distingue."
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
         />
@@ -149,7 +143,7 @@ export function ProfileForm({
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Guardar perfil
+          Guardar alterações
         </Button>
       </div>
     </div>

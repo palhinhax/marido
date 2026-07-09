@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSearch } from "@/components/site/hero-search";
+import { HomeProfessionalCTA } from "@/components/site/home-professional-cta";
 import { ServiceCard } from "@/components/service-card";
 import { CategoryCard } from "@/components/category-card";
 import { HowItWorks } from "@/components/seo/how-it-works";
@@ -191,25 +192,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Professional CTA */}
-        <section className="rounded-2xl bg-primary px-8 py-10 text-primary-foreground sm:px-10">
-          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-2xl font-bold">
-                É profissional? Trabalhe connosco
-              </h2>
-              <p className="mt-2 max-w-xl text-primary-foreground/80">
-                Tem experiência em reparações? Junte-se à plataforma, defina a
-                sua disponibilidade e receba pedidos na sua zona.
-              </p>
-            </div>
-            <Link href="/registar/profissional">
-              <Button size="lg" variant="secondary" className="shrink-0">
-                Tornar-me profissional
-              </Button>
-            </Link>
-          </div>
-        </section>
+        {/* Professional CTA (role-aware) */}
+        <HomeProfessionalCTA />
 
         <PopularLocations />
 

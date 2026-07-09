@@ -274,7 +274,7 @@ model AvailabilityException {
 
 model Booking {
   id             String               @id @default(cuid())
-  reference      String               @unique // human friendly, e.g. PJ-2K4F9A
+  reference      String               @unique // human friendly, e.g. VZ-2K4F9A
   clientId       String?
   client         User?                @relation("ClientBookings", fields: [clientId], references: [id], onDelete: SetNull)
   professionalId String?

@@ -10,7 +10,6 @@ import {
   MapPin,
   Star,
   Clock,
-  Upload,
   ShieldCheck,
   Loader2,
   UserCheck,
@@ -22,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { ImageUploader } from "@/components/image-uploader";
 import { cn } from "@/lib/utils";
 import {
   priceLabel,
@@ -368,7 +368,13 @@ export function BookingWizard({
               <Field
                 label={`Fotos ${service.requiresPhotos ? "(recomendadas)" : "(opcional)"}`}
               >
-                <PhotoUploader />
+                <ImageUploader
+                  folder="bookings"
+                  multiple
+                  max={6}
+                  value={form.photoUrls ?? []}
+                  onChange={(urls) => set("photoUrls", urls)}
+                />
               </Field>
             </div>
           )}
@@ -772,43 +778,6 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
     <div className="flex flex-col gap-0.5 border-b pb-2 sm:flex-row sm:justify-between sm:gap-4">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium sm:text-right">{value}</span>
-    </div>
-  );
-}
-
-// Preview-only uploader. TODO: wire to object storage (e.g. S3/UploadThing) and
-// pass returned URLs into the booking. For now photos are previewed locally.
-function PhotoUploader() {
-  const [previews, setPreviews] = useState<string[]>([]);
-  return (
-    <div>
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground hover:bg-muted/50">
-        <Upload className="h-5 w-5" />
-        Clique para adicionar fotos
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []).slice(0, 6);
-            setPreviews(files.map((f) => URL.createObjectURL(f)));
-          }}
-        />
-      </label>
-      {previews.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {previews.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={src}
-              alt=""
-              className="h-16 w-16 rounded-md object-cover"
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

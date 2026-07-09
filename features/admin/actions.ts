@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import type { BookingStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { notifyUser } from "@/lib/notifications";
@@ -57,6 +59,71 @@ export async function toggleProfessionalFeatured(professionalId: string) {
     data: { isFeatured: !pro?.isFeatured },
   });
   revalidatePath("/admin/profissionais");
+  return { ok: true };
+}
+
+const adminProfileSchema = z.object({
+  displayName: z.string().min(2),
+  headline: z.string().max(120).optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  whatsapp: z.string().optional().or(z.literal("")),
+  website: z.string().optional().or(z.literal("")),
+  nif: z.string().optional().or(z.literal("")),
+  companyName: z.string().optional().or(z.literal("")),
+  yearsExperience: z.coerce.number().int().min(0).max(70).optional(),
+});
+
+export async function adminUpdateProfessional(
+  professionalId: string,
+  input: z.infer<typeof adminProfileSchema>
+) {
+  await requireAdmin();
+  const data = adminProfileSchema.parse(input);
+  await prisma.professionalProfile.update({
+    where: { id: professionalId },
+    data: {
+      displayName: data.displayName,
+      headline: data.headline || null,
+      description: data.description || null,
+      phone: data.phone || null,
+      whatsapp: data.whatsapp || null,
+      website: data.website || null,
+      nif: data.nif || null,
+      companyName: data.companyName || null,
+      yearsExperience: data.yearsExperience ?? null,
+    },
+  });
+  revalidatePath("/admin/profissionais");
+  revalidatePath(`/admin/profissionais/${professionalId}`);
+  return { ok: true };
+}
+
+export async function deleteProfessional(professionalId: string) {
+  await requireAdmin();
+  const pro = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: { userId: true },
+  });
+  if (!pro) throw new Error("Profissional não encontrado");
+  // Deleting the user cascades the professional profile, its services, areas,
+  // availability, documents and reviews. Bookings are kept with the professional
+  // detached (professionalId set to null).
+  await prisma.user.delete({ where: { id: pro.userId } });
+  revalidatePath("/admin/profissionais");
+  return { ok: true };
+}
+
+// --- Users -------------------------------------------------------------------
+export async function deleteUser(userId: string) {
+  const admin = await requireAdmin();
+  if (admin.id === userId) {
+    throw new Error("Não pode apagar a sua própria conta.");
+  }
+  // Cascades client/professional profiles, reviews written and notifications.
+  // Bookings (as client or professional) are kept, detached (ids set to null).
+  await prisma.user.delete({ where: { id: userId } });
+  revalidatePath("/admin/clientes");
   return { ok: true };
 }
 
@@ -132,7 +199,8 @@ export async function updateServicePrice(
 // --- Bookings ----------------------------------------------------------------
 export async function adminUpdateBookingStatus(
   bookingId: string,
-  status: "PENDING" | "ACCEPTED" | "SCHEDULED" | "COMPLETED" | "CANCELLED"
+  status: BookingStatus,
+  note?: string
 ) {
   await requireAdmin();
   await prisma.booking.update({
@@ -140,10 +208,42 @@ export async function adminUpdateBookingStatus(
     data: {
       status,
       statusHistory: {
-        create: { status, note: "Atualizado pela administração" },
+        create: {
+          status,
+          note: note?.trim() || "Atualizado pela administração",
+        },
       },
     },
   });
+  revalidatePath("/admin/pedidos");
+  revalidatePath(`/admin/pedidos/${bookingId}`);
+  return { ok: true };
+}
+
+export async function deleteBooking(bookingId: string) {
+  await requireAdmin();
+
+  const review = await prisma.review.findUnique({
+    where: { bookingId },
+    select: { professionalId: true },
+  });
+
+  await prisma.booking.delete({ where: { id: bookingId } });
+
+  if (review) {
+    const agg = await prisma.review.aggregate({
+      where: { professionalId: review.professionalId, isApproved: true },
+      _avg: { rating: true },
+      _count: true,
+    });
+    await prisma.professionalProfile.update({
+      where: { id: review.professionalId },
+      data: { ratingAverage: agg._avg.rating ?? 0, ratingCount: agg._count },
+    });
+    revalidatePath("/admin/avaliacoes");
+  }
+
+  revalidatePath("/admin");
   revalidatePath("/admin/pedidos");
   return { ok: true };
 }

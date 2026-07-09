@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/site/logo-mark";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { accessibleAreas, AREA_META } from "@/lib/roles";
 
 export type DashboardArea = "client" | "professional" | "admin";
 
@@ -90,6 +91,7 @@ export function DashboardShell({
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const items = NAV[area];
+  const areas = accessibleAreas(session?.user?.role);
 
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -144,6 +146,31 @@ export function DashboardShell({
           )}
         >
           <nav className="space-y-1 p-3">
+            {/* Area switcher — for professionals/admins who span areas */}
+            {areas.length > 1 && (
+              <div className="mb-3 rounded-lg bg-muted p-1">
+                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Ver como
+                </p>
+                <div className="grid gap-1">
+                  {areas.map((a) => (
+                    <Link
+                      key={a}
+                      href={AREA_META[a].href}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+                        a === area
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {AREA_META[a].label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             {items.map((item) => (
               <Link
                 key={item.href}

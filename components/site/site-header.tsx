@@ -16,13 +16,24 @@ const navLinks = [
   { href: "/para-profissionais", label: "Para profissionais" },
 ];
 
+const ACCOUNT_LABEL: Record<string, string> = {
+  ADMIN: "Administração",
+  PROFESSIONAL: "Área de profissional",
+  CLIENT: "A minha conta",
+};
+
 export function SiteHeader() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
 
-  const dashHref = session?.user?.role
-    ? dashboardPathForRole(session.user.role)
-    : "/dashboard";
+  const role = session?.user?.role;
+  const dashHref = role ? dashboardPathForRole(role) : "/dashboard";
+  const accountLabel = (role && ACCOUNT_LABEL[role]) || "A minha conta";
+  const canSeeProfessionalCta =
+    role === "CLIENT" || (!role && status !== "loading");
+  const visibleNavLinks = navLinks.filter(
+    (l) => l.href !== "/para-profissionais" || canSeeProfessionalCta
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -33,7 +44,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {navLinks.map((l) => (
+          {visibleNavLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -48,7 +59,7 @@ export function SiteHeader() {
           {session ? (
             <Link href={dashHref}>
               <Button variant="outline" size="sm">
-                A minha conta
+                {accountLabel}
               </Button>
             </Link>
           ) : (
@@ -77,7 +88,7 @@ export function SiteHeader() {
       {/* Mobile menu */}
       <div className={cn("border-t md:hidden", open ? "block" : "hidden")}>
         <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-          {navLinks.map((l) => (
+          {visibleNavLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -95,7 +106,7 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
               >
                 <Button variant="outline" className="w-full">
-                  A minha conta
+                  {accountLabel}
                 </Button>
               </Link>
             ) : (

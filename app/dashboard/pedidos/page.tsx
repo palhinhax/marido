@@ -20,7 +20,7 @@ const GROUPS: { title: string; statuses: BookingStatus[] }[] = [
 ];
 
 export default async function ClientBookingsPage() {
-  const user = await requireUser(["CLIENT"]);
+  const user = await requireUser();
   const bookings = await getClientBookings(user.id, user.email!);
 
   return (

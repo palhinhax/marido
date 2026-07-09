@@ -88,8 +88,17 @@ export default async function PublicProfessionalPage({
 
       {/* Header */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-3xl font-bold text-primary">
-          {pro.displayName.charAt(0)}
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-3xl font-bold text-primary">
+          {pro.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={pro.photoUrl}
+              alt={pro.displayName}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            pro.displayName.charAt(0)
+          )}
         </div>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">

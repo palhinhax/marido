@@ -84,6 +84,7 @@ export default async function OnboardingPage() {
             displayName: pro.displayName,
             headline: pro.headline ?? "",
             description: pro.description ?? "",
+            photoUrl: pro.photoUrl ?? "",
             phone: pro.phone ?? "",
             whatsapp: pro.whatsapp ?? "",
             website: pro.website ?? "",

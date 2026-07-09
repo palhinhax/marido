@@ -7,9 +7,12 @@ export default auth((req) => {
   const role = req.auth?.user?.role;
   const { pathname } = nextUrl;
 
-  const isAuthRoute = ["/login", "/registar"].some((r) =>
-    pathname.startsWith(r)
-  );
+  // /registar/profissional is reachable while logged in (a client can upgrade
+  // to a professional account there), so it is NOT treated as an auth route.
+  const isAuthRoute =
+    pathname.startsWith("/login") ||
+    (pathname.startsWith("/registar") &&
+      !pathname.startsWith("/registar/profissional"));
 
   // Route groups that require authentication
   const clientArea = pathname.startsWith("/dashboard");

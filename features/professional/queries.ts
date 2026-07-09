@@ -50,8 +50,9 @@ export async function getCurrentProfessional() {
     where: { userId: user.id },
   });
   if (!profile) {
-    // Not a professional account
-    redirect("/dashboard");
+    // No professional profile yet (e.g. an admin who hasn't created one).
+    // Send them to create/activate one rather than bouncing to the client area.
+    redirect("/registar/profissional");
   }
   return profile;
 }
