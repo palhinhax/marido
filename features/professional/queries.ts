@@ -1,6 +1,46 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
+
+// Prisma OR clause matching a booking location against a professional's areas.
+function areaMatchClause(
+  areas: { district: string; municipality: string | null }[]
+): Prisma.BookingWhereInput["OR"] {
+  return areas.map((a) =>
+    a.municipality
+      ? { district: a.district, municipality: a.municipality }
+      : { district: a.district }
+  );
+}
+
+// Unassigned PENDING bookings a professional is eligible to claim:
+// matches one of their services AND falls within one of their service areas.
+export async function getClaimableBookings(professionalId: string, take = 20) {
+  const [services, areas] = await Promise.all([
+    prisma.professionalService.findMany({
+      where: { professionalId },
+      select: { service: { select: { slug: true } } },
+    }),
+    prisma.professionalServiceArea.findMany({
+      where: { professionalId },
+      select: { district: true, municipality: true },
+    }),
+  ]);
+  if (services.length === 0 || areas.length === 0) return [];
+
+  return prisma.booking.findMany({
+    where: {
+      professionalId: null,
+      status: "PENDING",
+      service: { slug: { in: services.map((s) => s.service.slug) } },
+      OR: areaMatchClause(areas),
+    },
+    include: { service: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+    take,
+  });
+}
 
 // Loads the professional profile for the logged-in user, or redirects.
 export async function getCurrentProfessional() {

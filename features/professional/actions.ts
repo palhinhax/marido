@@ -232,6 +232,80 @@ export async function respondToBooking(
   return { ok: true };
 }
 
+// --- Claim an unassigned booking ---------------------------------------------
+export async function claimBooking(bookingId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Sessão inválida");
+  const pro = await prisma.professionalProfile.findUnique({
+    where: { userId: user.id },
+    select: { id: true, approvalStatus: true },
+  });
+  if (!pro) throw new Error("Perfil de profissional não encontrado");
+  if (pro.approvalStatus !== "APPROVED") {
+    throw new Error("A sua conta ainda não foi aprovada");
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      service: { select: { slug: true, name: true } },
+      client: { select: { id: true } },
+    },
+  });
+  if (!booking) throw new Error("Pedido não encontrado");
+  if (booking.professionalId) {
+    throw new Error("Este pedido já foi atribuído a outro profissional");
+  }
+
+  // Eligibility: professional must offer the service and cover the area.
+  const [offersService, coversArea] = await Promise.all([
+    prisma.professionalService.findFirst({
+      where: {
+        professionalId: pro.id,
+        service: { slug: booking.service.slug },
+      },
+      select: { id: true },
+    }),
+    prisma.professionalServiceArea.findFirst({
+      where: {
+        professionalId: pro.id,
+        district: booking.district,
+        OR: [{ municipality: null }, { municipality: booking.municipality }],
+      },
+      select: { id: true },
+    }),
+  ]);
+  if (!offersService) throw new Error("Não oferece este serviço");
+  if (!coversArea) throw new Error("Este pedido está fora da sua área");
+
+  // Atomic claim — only succeeds if still unassigned and pending.
+  const result = await prisma.booking.updateMany({
+    where: { id: bookingId, professionalId: null, status: "PENDING" },
+    data: { professionalId: pro.id, status: "ACCEPTED" },
+  });
+  if (result.count === 0) {
+    throw new Error("Este pedido já foi atribuído a outro profissional");
+  }
+
+  await prisma.bookingStatusHistory.create({
+    data: {
+      bookingId,
+      status: "ACCEPTED",
+      note: "Pedido aceite pelo profissional",
+    },
+  });
+  await notifyBookingAccepted({
+    clientUserId: booking.client?.id,
+    clientEmail: booking.clientEmail,
+    reference: booking.reference,
+  });
+
+  revalidatePath("/profissional");
+  revalidatePath("/profissional/pedidos");
+  revalidatePath(`/profissional/pedidos/${bookingId}`);
+  return { ok: true };
+}
+
 // --- Onboarding --------------------------------------------------------------
 export async function setOnboardingStep(step: number) {
   const id = await requireProfessionalId();

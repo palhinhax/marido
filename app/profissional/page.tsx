@@ -12,10 +12,12 @@ import { prisma } from "@/lib/prisma";
 import {
   getCurrentProfessional,
   getProfileCompletion,
+  getClaimableBookings,
 } from "@/features/professional/queries";
 import { StatCard, EmptyState } from "@/components/dashboard/stat-card";
 import { BookingCard } from "@/components/booking-card";
 import { BookingActions } from "@/features/professional/components/booking-actions";
+import { ClaimButton } from "@/features/professional/components/claim-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { euros } from "@/lib/format";
@@ -75,6 +77,8 @@ export default async function ProfessionalDashboard() {
     ]);
 
   const notApproved = pro.approvalStatus !== "APPROVED";
+  // Unassigned requests this professional can claim (only when approved).
+  const claimable = notApproved ? [] : await getClaimableBookings(pro.id, 6);
 
   return (
     <div className="space-y-8">
@@ -129,6 +133,44 @@ export default async function ProfessionalDashboard() {
           hint="Com base nos serviços concluídos"
         />
       </div>
+
+      {/* Claimable requests — unassigned, in this professional's zone */}
+      {claimable.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Pedidos disponíveis na sua zona
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Pedidos sem profissional atribuído que correspondem aos seus
+                serviços e áreas. Seja o primeiro a aceitar.
+              </p>
+            </div>
+            <Badge variant="warm">{claimable.length}</Badge>
+          </div>
+          <div className="space-y-3">
+            {claimable.map((b) => (
+              <BookingCard
+                key={b.id}
+                booking={{
+                  id: b.id,
+                  reference: b.reference,
+                  status: b.status,
+                  serviceName: b.service.name,
+                  city: b.city,
+                  municipality: b.municipality,
+                  scheduledStart: b.scheduledStart,
+                  estimatedPrice: b.estimatedPrice,
+                  priceType: b.priceType,
+                  urgency: b.urgency,
+                }}
+                actions={<ClaimButton bookingId={b.id} />}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Profile completion */}
       <div className="rounded-xl border bg-card p-5">
