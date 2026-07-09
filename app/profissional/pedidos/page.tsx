@@ -5,7 +5,7 @@ import {
 } from "@/features/professional/queries";
 import { BookingCard } from "@/components/booking-card";
 import { BookingActions } from "@/features/professional/components/booking-actions";
-import { ClaimButton } from "@/features/professional/components/claim-button";
+import { ApplyDialog } from "@/features/professional/components/apply-dialog";
 import { EmptyState } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import type { BookingStatus } from "@prisma/client";
@@ -79,7 +79,27 @@ export default async function ProfessionalBookingsPage() {
                   priceType: b.priceType,
                   urgency: b.urgency,
                 }}
-                actions={<ClaimButton bookingId={b.id} />}
+                actions={
+                  <ApplyDialog
+                    applied={b.applications[0]?.status ?? null}
+                    booking={{
+                      id: b.id,
+                      reference: b.reference,
+                      serviceName: b.service.name,
+                      estimatedPrice: b.estimatedPrice,
+                      priceType: b.priceType,
+                      urgency: b.urgency,
+                      scheduledStart: b.scheduledStart,
+                      district: b.district,
+                      municipality: b.municipality,
+                      propertyType: b.propertyType,
+                      durationMinutes: b.service.estimatedDurationMinutes,
+                      description: b.clientDescription,
+                      photoCount: b._count.photos,
+                      applicantCount: b._count.applications,
+                    }}
+                  />
+                }
               />
             ))}
           </div>

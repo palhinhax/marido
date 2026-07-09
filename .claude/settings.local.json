@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx next *)",
       "Bash(echo \"EXIT: $?\")",
-      "Read(//c/Users/jduarte/AppData/Local/Temp/claude/c--Users-jduarte-Documents-workSpace-marido/27af96d1-dbe8-4581-ae8c-c702e6a098a5/scratchpad/**)"
+      "Read(//c/Users/jduarte/AppData/Local/Temp/claude/c--Users-jduarte-Documents-workSpace-marido/27af96d1-dbe8-4581-ae8c-c702e6a098a5/scratchpad/**)",
+      "Bash(taskkill //F //IM node.exe //T)",
+      "Bash(pnpm exec *)"
     ]
   }
 }

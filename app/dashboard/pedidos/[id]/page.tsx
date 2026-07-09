@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { BookingStatusBadge } from "@/components/status-badge";
 import { BookingTimeline } from "@/components/booking-timeline";
 import { BookingDetailActions } from "@/features/client/components/booking-detail-actions";
+import { ApplicantsList } from "@/features/client/components/applicants-list";
 import {
   priceLabel,
   formatDateTime,
@@ -29,6 +30,25 @@ export default async function ClientBookingDetail({
       professional: { select: { displayName: true, slug: true, phone: true } },
       statusHistory: { orderBy: { createdAt: "desc" } },
       review: true,
+      applications: {
+        where: { status: { in: ["PENDING", "SELECTED"] } },
+        include: {
+          professional: {
+            select: {
+              id: true,
+              slug: true,
+              displayName: true,
+              photoUrl: true,
+              headline: true,
+              isVerified: true,
+              ratingAverage: true,
+              ratingCount: true,
+              completedJobs: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: "asc" }],
+      },
     },
   });
 
@@ -105,6 +125,28 @@ export default async function ClientBookingDetail({
           {booking.clientDescription}
         </p>
       </div>
+
+      {/* Applicants — choose one (Fixando model) */}
+      {booking.status === "PENDING" && (
+        <ApplicantsList
+          bookingId={booking.id}
+          fallbackPrice={booking.estimatedPrice}
+          fallbackPriceType={booking.priceType}
+          applicants={booking.applications.map((a) => ({
+            professionalId: a.professional.id,
+            displayName: a.professional.displayName,
+            slug: a.professional.slug,
+            photoUrl: a.professional.photoUrl,
+            headline: a.professional.headline,
+            isVerified: a.professional.isVerified,
+            ratingAverage: a.professional.ratingAverage,
+            ratingCount: a.professional.ratingCount,
+            completedJobs: a.professional.completedJobs,
+            message: a.message,
+            proposedPrice: a.proposedPrice,
+          }))}
+        />
+      )}
 
       {booking.professional && (
         <div className="rounded-xl border bg-card p-5">

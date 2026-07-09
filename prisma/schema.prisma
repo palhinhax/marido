@@ -79,7 +79,16 @@ enum NotificationType {
   BOOKING_REJECTED
   BOOKING_COMPLETED
   REVIEW_REQUEST
+  APPLICATION_RECEIVED
+  APPLICATION_SELECTED
   GENERIC
+}
+
+enum ApplicationStatus {
+  PENDING // candidatura enviada, aguarda decisão do cliente
+  SELECTED // cliente escolheu este profissional
+  REJECTED // não escolhido
+  WITHDRAWN // profissional retirou a candidatura
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +153,7 @@ model ProfessionalProfile {
   bookings      Booking[]                 @relation("ProfessionalBookings")
   reviews       Review[]                  @relation("ReviewTarget")
   documents     VerificationDocument[]
+  applications  BookingApplication[]
 }
 
 model VerificationDocument {
@@ -321,10 +331,30 @@ model Booking {
   photos        BookingPhoto[]
   statusHistory BookingStatusHistory[]
   review        Review?
+  applications  BookingApplication[]
 
   @@index([status])
   @@index([district, municipality])
   @@index([professionalId, scheduledStart])
+}
+
+// A professional's application/proposal for an open request. The client picks
+// one; the others become REJECTED.
+model BookingApplication {
+  id             String              @id @default(cuid())
+  bookingId      String
+  booking        Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  message        String?
+  proposedPrice  Int? // optional price proposal in EUR
+  status         ApplicationStatus   @default(PENDING)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([bookingId, professionalId])
+  @@index([professionalId, status])
+  @@index([bookingId, status])
 }
 
 model BookingPhoto {

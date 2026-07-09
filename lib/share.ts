@@ -21,7 +21,7 @@ export function buildShareCaption(
   const urg =
     booking.urgency !== "NORMAL" ? ` (${URGENCY_LABEL[booking.urgency]})` : "";
   return [
-    `🔧 Novo pedido no Vizinho`,
+    `🔧 Novo pedido ao Vizinho`,
     `${booking.serviceName} em ${booking.municipality}${urg}`,
     `Procura-se profissional na zona. Vê os detalhes e aceita aqui 👇`,
     absoluteUrl(openRequestPath(booking.reference)),

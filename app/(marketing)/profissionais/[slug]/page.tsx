@@ -74,7 +74,7 @@ export default async function PublicProfessionalPage({
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10 px-4 py-10">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-10">
       <JsonLd
         data={localBusinessJsonLd({
           name: pro.displayName,
@@ -84,11 +84,13 @@ export default async function PublicProfessionalPage({
           rating: { value: pro.ratingAverage, count: pro.ratingCount },
         })}
       />
-      <Breadcrumbs crumbs={crumbs} />
+      <div className="rounded-xl border bg-background/95 p-3 shadow-sm backdrop-blur">
+        <Breadcrumbs crumbs={crumbs} />
+      </div>
 
       {/* Header */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-3xl font-bold text-primary">
+      <div className="flex flex-col gap-5 rounded-2xl border bg-background/95 p-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:p-7">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-3xl font-bold text-primary ring-1 ring-border">
           {pro.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -132,13 +134,13 @@ export default async function PublicProfessionalPage({
       </div>
 
       {pro.description && (
-        <section>
+        <section className="rounded-2xl border bg-card/95 p-5 shadow-sm backdrop-blur">
           <h2 className="text-lg font-semibold">Sobre</h2>
           <p className="mt-2 text-muted-foreground">{pro.description}</p>
         </section>
       )}
 
-      <section>
+      <section className="rounded-2xl border bg-card/95 p-5 shadow-sm backdrop-blur">
         <h2 className="text-lg font-semibold">Serviços</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {pro.services.map((s) => (
@@ -153,7 +155,7 @@ export default async function PublicProfessionalPage({
         </div>
       </section>
 
-      <section>
+      <section className="rounded-2xl border bg-card/95 p-5 shadow-sm backdrop-blur">
         <h2 className="text-lg font-semibold">Áreas cobertas</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {pro.serviceAreas.map((a) => (
@@ -168,7 +170,7 @@ export default async function PublicProfessionalPage({
         </div>
       </section>
 
-      <section>
+      <section className="rounded-2xl border bg-card/95 p-5 shadow-sm backdrop-blur">
         <h2 className="text-lg font-semibold">Avaliações</h2>
         {pro.reviews.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
@@ -192,7 +194,7 @@ export default async function PublicProfessionalPage({
         )}
       </section>
 
-      <div className="rounded-2xl border bg-accent/40 p-6 text-center">
+      <div className="rounded-2xl border bg-accent/95 p-6 text-center shadow-sm backdrop-blur">
         <div className="flex justify-center gap-1 text-warm">
           <CheckCircle2 className="h-6 w-6 text-primary" />
         </div>

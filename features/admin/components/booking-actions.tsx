@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import type { BookingStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { BOOKING_STATUS_LABEL } from "@/lib/format";
@@ -57,24 +58,22 @@ export function AdminBookingActions({
     });
   }
 
-  function remove() {
-    start(async () => {
-      try {
-        await deleteBooking(bookingId);
-        toast({ title: "Pedido eliminado" });
-        if (redirectToList) {
-          router.push("/admin/pedidos");
-        } else {
-          router.refresh();
-        }
-      } catch (e) {
-        toast({
-          title: "Erro",
-          description: (e as Error).message,
-          variant: "destructive",
-        });
+  async function remove() {
+    try {
+      await deleteBooking(bookingId);
+      toast({ title: "Pedido eliminado" });
+      if (redirectToList) {
+        router.push("/admin/pedidos");
+      } else {
+        router.refresh();
       }
-    });
+    } catch (e) {
+      toast({
+        title: "Erro",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -106,20 +105,22 @@ export function AdminBookingActions({
         {pending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
         Atualizar estado
       </Button>
-      <Button
-        variant="outline"
-        className="text-destructive hover:bg-destructive/10"
-        disabled={pending}
-        onClick={() => {
-          if (
-            confirm("Eliminar este pedido? Esta ação não pode ser anulada.")
-          ) {
-            remove();
-          }
-        }}
-      >
-        <Trash2 className="mr-1 h-4 w-4" /> Eliminar
-      </Button>
+      <ConfirmDialog
+        title="Eliminar este pedido?"
+        description="Esta ação não pode ser anulada."
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={remove}
+        trigger={
+          <Button
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            disabled={pending}
+          >
+            <Trash2 className="mr-1 h-4 w-4" /> Eliminar
+          </Button>
+        }
+      />
     </div>
   );
 }

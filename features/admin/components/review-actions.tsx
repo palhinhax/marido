@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { setReviewApproval, deleteReview } from "../actions";
 
@@ -53,18 +54,31 @@ export function ReviewActions({
           <Eye className="mr-1 h-4 w-4" /> Aprovar
         </Button>
       )}
-      <Button
-        size="sm"
-        variant="outline"
-        className="text-destructive hover:bg-destructive/10"
-        disabled={pending}
-        onClick={() => {
-          if (confirm("Eliminar esta avaliação?"))
-            run(() => deleteReview(reviewId), "Avaliação eliminada");
+      <ConfirmDialog
+        title="Eliminar esta avaliação?"
+        description="Esta ação não pode ser anulada."
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={async () => {
+          try {
+            await deleteReview(reviewId);
+            toast({ title: "Avaliação eliminada" });
+            router.refresh();
+          } catch {
+            toast({ title: "Erro", variant: "destructive" });
+          }
         }}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+        trigger={
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            disabled={pending}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        }
+      />
     </div>
   );
 }

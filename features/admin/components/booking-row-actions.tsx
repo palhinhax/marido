@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, Trash2 } from "lucide-react";
 import type { BookingStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { BOOKING_STATUS_LABEL } from "@/lib/format";
 import { adminUpdateBookingStatus, deleteBooking } from "../actions";
@@ -85,22 +86,36 @@ export function AdminBookingRowActions({
           <Check className="h-4 w-4" />
         )}
       </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="text-destructive hover:bg-destructive/10"
-        disabled={pending}
-        onClick={() => {
-          if (
-            confirm("Eliminar este pedido? Esta ação não pode ser anulada.")
-          ) {
-            run(() => deleteBooking(bookingId), "Pedido eliminado");
+      <ConfirmDialog
+        title="Eliminar este pedido?"
+        description="Esta ação não pode ser anulada."
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={async () => {
+          try {
+            await deleteBooking(bookingId);
+            toast({ title: "Pedido eliminado" });
+            router.refresh();
+          } catch (e) {
+            toast({
+              title: "Erro",
+              description: (e as Error).message,
+              variant: "destructive",
+            });
           }
         }}
-        aria-label="Eliminar pedido"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+        trigger={
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            disabled={pending}
+            aria-label="Eliminar pedido"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        }
+      />
     </div>
   );
 }

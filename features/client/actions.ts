@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { notifyUser } from "@/lib/notifications";
 
 async function requireUserId(): Promise<{ id: string; email: string }> {
   const user = await getCurrentUser();
@@ -140,5 +141,83 @@ export async function updateClientProfile(
     },
   });
   revalidatePath("/dashboard/perfil");
+  return { ok: true };
+}
+
+// --- Choose a professional from the applicants (Fixando model) ---------------
+export async function selectProfessional(
+  bookingId: string,
+  professionalId: string
+) {
+  const booking = await ownedBooking(bookingId);
+  if (booking.professionalId || booking.status !== "PENDING") {
+    throw new Error("Este pedido já tem um profissional atribuído");
+  }
+
+  const application = await prisma.bookingApplication.findUnique({
+    where: { bookingId_professionalId: { bookingId, professionalId } },
+    include: { professional: { select: { userId: true, displayName: true } } },
+  });
+  if (!application || application.status === "WITHDRAWN") {
+    throw new Error("Candidatura não encontrada");
+  }
+
+  const nextStatus = booking.scheduledStart ? "SCHEDULED" : "ACCEPTED";
+
+  await prisma.$transaction([
+    prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        professionalId,
+        status: nextStatus,
+        // If the professional proposed a price, use it as the estimate.
+        ...(application.proposedPrice != null
+          ? { estimatedPrice: application.proposedPrice }
+          : {}),
+        statusHistory: {
+          create: {
+            status: nextStatus,
+            note: `Profissional escolhido: ${application.professional.displayName}`,
+          },
+        },
+      },
+    }),
+    prisma.bookingApplication.update({
+      where: { id: application.id },
+      data: { status: "SELECTED" },
+    }),
+    // All other applications for this booking become rejected.
+    prisma.bookingApplication.updateMany({
+      where: { bookingId, id: { not: application.id }, status: "PENDING" },
+      data: { status: "REJECTED" },
+    }),
+  ]);
+
+  // Notify the chosen professional.
+  await notifyUser({
+    userId: application.professional.userId,
+    type: "APPLICATION_SELECTED",
+    title: "Foi escolhido para um trabalho!",
+    body: `O cliente escolheu-o para o pedido ${booking.reference}.`,
+    link: `/profissional/pedidos/${bookingId}`,
+  });
+
+  // Notify the professionals who were not chosen.
+  const rejected = await prisma.bookingApplication.findMany({
+    where: { bookingId, status: "REJECTED" },
+    include: { professional: { select: { userId: true } } },
+  });
+  for (const r of rejected) {
+    await notifyUser({
+      userId: r.professional.userId,
+      type: "GENERIC",
+      title: "Pedido atribuído a outro profissional",
+      body: `O cliente escolheu outro profissional para o pedido ${booking.reference}.`,
+      link: "/profissional/pedidos",
+    });
+  }
+
+  revalidatePath(`/dashboard/pedidos/${bookingId}`);
+  revalidatePath("/profissional/pedidos");
   return { ok: true };
 }

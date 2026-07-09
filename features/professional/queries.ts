@@ -36,9 +36,45 @@ export async function getClaimableBookings(professionalId: string, take = 20) {
       service: { slug: { in: services.map((s) => s.service.slug) } },
       OR: areaMatchClause(areas),
     },
-    include: { service: { select: { name: true } } },
+    include: {
+      service: { select: { name: true, estimatedDurationMinutes: true } },
+      _count: { select: { photos: true, applications: true } },
+      // The current professional's own application (if any) to show state.
+      applications: {
+        where: { professionalId, status: { not: "WITHDRAWN" } },
+        select: { status: true, proposedPrice: true, message: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take,
+  });
+}
+
+// The professional's own applications, for an "As minhas candidaturas" view.
+export async function getProfessionalApplications(professionalId: string) {
+  return prisma.bookingApplication.findMany({
+    where: {
+      professionalId,
+      status: { in: ["PENDING", "SELECTED", "REJECTED"] },
+    },
+    include: {
+      booking: {
+        select: {
+          id: true,
+          reference: true,
+          status: true,
+          municipality: true,
+          district: true,
+          scheduledStart: true,
+          estimatedPrice: true,
+          priceType: true,
+          urgency: true,
+          professionalId: true,
+          service: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
   });
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarClock, XCircle, Star, Loader2 } from "lucide-react";
 import type { BookingStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -70,27 +71,34 @@ export function BookingDetailActions({
             </Button>
           )}
           {cancellable && (
-            <Button
-              variant="outline"
-              className="text-destructive hover:bg-destructive/10"
-              disabled={busy === "cancel"}
-              onClick={() => {
-                if (confirm("Tem a certeza que quer cancelar este pedido?")) {
-                  run(
-                    "cancel",
-                    () => cancelBooking(bookingId),
-                    "Pedido cancelado"
-                  );
-                }
-              }}
-            >
-              {busy === "cancel" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <XCircle className="mr-2 h-4 w-4" />
-              )}
-              Cancelar pedido
-            </Button>
+            <ConfirmDialog
+              title="Cancelar este pedido?"
+              description="Esta ação não pode ser anulada. O profissional será avisado de que o pedido foi cancelado."
+              confirmLabel="Cancelar pedido"
+              cancelLabel="Voltar"
+              destructive
+              onConfirm={() =>
+                run(
+                  "cancel",
+                  () => cancelBooking(bookingId),
+                  "Pedido cancelado"
+                )
+              }
+              trigger={
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10"
+                  disabled={busy === "cancel"}
+                >
+                  {busy === "cancel" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <XCircle className="mr-2 h-4 w-4" />
+                  )}
+                  Cancelar pedido
+                </Button>
+              }
+            />
           )}
         </div>
       )}

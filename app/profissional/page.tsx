@@ -17,7 +17,7 @@ import {
 import { StatCard, EmptyState } from "@/components/dashboard/stat-card";
 import { BookingCard } from "@/components/booking-card";
 import { BookingActions } from "@/features/professional/components/booking-actions";
-import { ClaimButton } from "@/features/professional/components/claim-button";
+import { ApplyDialog } from "@/features/professional/components/apply-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { euros } from "@/lib/format";
@@ -143,8 +143,8 @@ export default async function ProfessionalDashboard() {
                 Pedidos disponíveis na sua zona
               </h2>
               <p className="text-sm text-muted-foreground">
-                Pedidos sem profissional atribuído que correspondem aos seus
-                serviços e áreas. Seja o primeiro a aceitar.
+                Pedidos que correspondem aos seus serviços e áreas. Candidate-se
+                e o cliente escolhe entre os profissionais interessados.
               </p>
             </div>
             <Badge variant="warm">{claimable.length}</Badge>
@@ -165,7 +165,27 @@ export default async function ProfessionalDashboard() {
                   priceType: b.priceType,
                   urgency: b.urgency,
                 }}
-                actions={<ClaimButton bookingId={b.id} />}
+                actions={
+                  <ApplyDialog
+                    applied={b.applications[0]?.status ?? null}
+                    booking={{
+                      id: b.id,
+                      reference: b.reference,
+                      serviceName: b.service.name,
+                      estimatedPrice: b.estimatedPrice,
+                      priceType: b.priceType,
+                      urgency: b.urgency,
+                      scheduledStart: b.scheduledStart,
+                      district: b.district,
+                      municipality: b.municipality,
+                      propertyType: b.propertyType,
+                      durationMinutes: b.service.estimatedDurationMinutes,
+                      description: b.clientDescription,
+                      photoCount: b._count.photos,
+                      applicantCount: b._count.applications,
+                    }}
+                  />
+                }
               />
             ))}
           </div>

@@ -73,32 +73,17 @@ export async function createBooking(
 
   const user = await getCurrentUser();
 
-  // Resolve schedule & professional
+  // Fixando model: the request is created OPEN (no professional assigned).
+  // Professionals apply and the client chooses. We only record the client's
+  // preferred date/time here.
   let scheduledStart: Date | null = null;
   let scheduledEnd: Date | null = null;
-  let professionalId: string | null = data.professionalId ?? null;
 
   if (data.scheduledStartISO) {
     scheduledStart = new Date(data.scheduledStartISO);
     scheduledEnd = new Date(
       scheduledStart.getTime() + service.estimatedDurationMinutes * 60 * 1000
     );
-
-    // If no specific professional chosen, pick the first one free at that slot.
-    if (!professionalId) {
-      const { aggregated } = await getAvailability({
-        serviceSlug: data.serviceSlug,
-        district: data.district,
-        municipality: data.municipality,
-      });
-      const day = aggregated.find(
-        (d) => d.dateISO === scheduledStart!.toISOString().slice(0, 10)
-      );
-      const slot = day?.slots.find(
-        (s) => s.startISO === scheduledStart!.toISOString()
-      );
-      professionalId = slot?.professionalIds[0] ?? null;
-    }
   }
 
   const reference = generateBookingReference();
@@ -107,7 +92,7 @@ export async function createBooking(
     data: {
       reference,
       clientId: user?.id ?? null,
-      professionalId,
+      professionalId: null,
       serviceId: service.id,
       status: "PENDING",
       address: data.address,

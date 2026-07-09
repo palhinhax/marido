@@ -10,6 +10,8 @@ import {
   notifyBookingAccepted,
   notifyBookingRejected,
   notifyBookingCompleted,
+  notifyUser,
+  sendEmail,
 } from "@/lib/notifications";
 import { DISTRICTS } from "@/lib/data/locations";
 import type { BookingStatus } from "@prisma/client";
@@ -315,13 +317,20 @@ export async function becomeProfessional() {
   return { ok: true };
 }
 
-// --- Claim an unassigned booking ---------------------------------------------
-export async function claimBooking(bookingId: string) {
+// --- Apply to an open request (Fixando model) --------------------------------
+const applySchema = z.object({
+  bookingId: z.string(),
+  message: z.string().max(1000).optional().or(z.literal("")),
+  proposedPrice: z.coerce.number().int().min(0).max(100000).optional(),
+});
+
+export async function applyToBooking(input: z.infer<typeof applySchema>) {
+  const data = applySchema.parse(input);
   const user = await getCurrentUser();
   if (!user) throw new Error("Sessão inválida");
   const pro = await prisma.professionalProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true, approvalStatus: true },
+    select: { id: true, approvalStatus: true, displayName: true },
   });
   if (!pro) throw new Error("Perfil de profissional não encontrado");
   if (pro.approvalStatus !== "APPROVED") {
@@ -329,15 +338,15 @@ export async function claimBooking(bookingId: string) {
   }
 
   const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
+    where: { id: data.bookingId },
     include: {
       service: { select: { slug: true, name: true } },
       client: { select: { id: true } },
     },
   });
   if (!booking) throw new Error("Pedido não encontrado");
-  if (booking.professionalId) {
-    throw new Error("Este pedido já foi atribuído a outro profissional");
+  if (booking.professionalId || booking.status !== "PENDING") {
+    throw new Error("Este pedido já não está a receber candidaturas");
   }
 
   // Eligibility: professional must offer the service and cover the area.
@@ -361,31 +370,56 @@ export async function claimBooking(bookingId: string) {
   if (!offersService) throw new Error("Não oferece este serviço");
   if (!coversArea) throw new Error("Este pedido está fora da sua área");
 
-  // Atomic claim — only succeeds if still unassigned and pending.
-  const result = await prisma.booking.updateMany({
-    where: { id: bookingId, professionalId: null, status: "PENDING" },
-    data: { professionalId: pro.id, status: "ACCEPTED" },
-  });
-  if (result.count === 0) {
-    throw new Error("Este pedido já foi atribuído a outro profissional");
-  }
-
-  await prisma.bookingStatusHistory.create({
-    data: {
-      bookingId,
-      status: "ACCEPTED",
-      note: "Pedido aceite pelo profissional",
+  // Upsert the application (re-applying updates the message/price).
+  await prisma.bookingApplication.upsert({
+    where: {
+      bookingId_professionalId: {
+        bookingId: booking.id,
+        professionalId: pro.id,
+      },
+    },
+    create: {
+      bookingId: booking.id,
+      professionalId: pro.id,
+      message: data.message || null,
+      proposedPrice: data.proposedPrice ?? null,
+      status: "PENDING",
+    },
+    update: {
+      message: data.message || null,
+      proposedPrice: data.proposedPrice ?? null,
+      status: "PENDING",
     },
   });
-  await notifyBookingAccepted({
-    clientUserId: booking.client?.id,
-    clientEmail: booking.clientEmail,
-    reference: booking.reference,
+
+  // Notify the client that a new candidate has applied.
+  if (booking.client?.id) {
+    await notifyUser({
+      userId: booking.client.id,
+      type: "APPLICATION_RECEIVED",
+      title: "Nova candidatura ao seu pedido",
+      body: `${pro.displayName} candidatou-se a "${booking.service.name}". Veja e escolha.`,
+      link: `/dashboard/pedidos`,
+    });
+  }
+  await sendEmail({
+    to: booking.clientEmail,
+    subject: `Nova candidatura — ${booking.reference}`,
+    body: `${pro.displayName} candidatou-se ao seu pedido de "${booking.service.name}". Entre no Vizinho para ver e escolher.`,
   });
 
-  revalidatePath("/profissional");
   revalidatePath("/profissional/pedidos");
-  revalidatePath(`/profissional/pedidos/${bookingId}`);
+  revalidatePath("/dashboard/pedidos");
+  return { ok: true };
+}
+
+export async function withdrawApplication(bookingId: string) {
+  const id = await requireProfessionalId();
+  await prisma.bookingApplication.updateMany({
+    where: { bookingId, professionalId: id, status: "PENDING" },
+    data: { status: "WITHDRAWN" },
+  });
+  revalidatePath("/profissional/pedidos");
   return { ok: true };
 }
 
