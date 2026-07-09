@@ -118,7 +118,7 @@ export const CATALOG: CatalogCategory[] = [
     icon: "Wrench",
     description:
       "Pequenos arranjos domésticos, reparação de portas e estores, troca de fechaduras e tudo o que precisa de um marido de aluguer de confiança.",
-    seoTitle: "Reparações e Manutenção em Casa | Preços Definidos | Vizinho",
+    seoTitle: "Reparações e Manutenção em Casa | Preços Definidos",
     seoDescription:
       "Peça serviços de reparação e manutenção em casa: portas, estores, fechaduras e pequenos arranjos. Marcação online com preços claros.",
     order: 1,

@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, X, Star, PlusCircle } from "lucide-react";
+import Link from "next/link";
+import { Check, X, Star, PlusCircle, MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { FAQSection } from "@/components/seo/faq-section";
 import { HowItWorks } from "@/components/seo/how-it-works";
 import { RelatedServices } from "@/components/seo/related-services";
 import { ServicePriceBox } from "@/components/seo/service-price-box";
-import { PopularLocations } from "@/components/seo/popular-locations";
 import { MobileCTA } from "@/components/site/mobile-cta";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from "@/lib/seo";
 import { euros } from "@/lib/format";
 import { ALL_SERVICES, getServiceBySlug } from "@/lib/data/catalog";
+import { getServiceCityLocations } from "@/lib/data/locations";
 
 export function generateStaticParams() {
   return ALL_SERVICES.map((s) => ({
@@ -27,11 +28,18 @@ export function generateMetadata({
 }): Metadata {
   const service = getServiceBySlug(params.serviceSlug);
   if (!service) return {};
-  const title = `${service.name} | Preço e marcação online — Vizinho`;
+  const title = `${service.name} — preço e marcação online`;
   const description = service.shortDescription;
   return {
     title,
     description,
+    keywords: [
+      service.name.toLowerCase(),
+      `${service.name.toLowerCase()} preço`,
+      `${service.name.toLowerCase()} ao domicílio`,
+      service.category.name.toLowerCase(),
+      "marido de aluguer",
+    ],
     alternates: {
       canonical: `/servicos/${service.category.slug}/${service.slug}`,
     },
@@ -49,6 +57,7 @@ export default function ServicePage({
 
   const bookHref = `/marcar/${service.slug}`;
   const url = `/servicos/${service.category.slug}/${service.slug}`;
+  const serviceCities = getServiceCityLocations();
 
   const crumbs = [
     { name: "Início", href: "/" },
@@ -198,10 +207,27 @@ export default function ServicePage({
       </div>
 
       <div className="mt-16">
-        <PopularLocations
-          roleSlug={service.category.professionalRole}
-          title={`${service.name} — onde está disponível`}
-        />
+        <section>
+          <h2 className="text-2xl font-bold">
+            {service.name} — onde está disponível
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Marque {service.name.toLowerCase()} nas principais cidades, com
+            preço definido e profissionais avaliados.
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {serviceCities.map((c) => (
+              <Link
+                key={c.slug}
+                href={`${url}/${c.slug}`}
+                className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2.5 text-sm font-medium transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                {service.name} em {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
 
       <MobileCTA

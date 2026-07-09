@@ -15,6 +15,27 @@ import { HowItWorks } from "@/components/seo/how-it-works";
 import { FAQSection } from "@/components/seo/faq-section";
 import { PopularLocations } from "@/components/seo/popular-locations";
 import { CATALOG, getServiceBySlug } from "@/lib/data/catalog";
+import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/json-ld";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Marido de Aluguer e Serviços para Casa em Portugal",
+  description:
+    "Marido de aluguer, canalizador, eletricista, montagem de móveis e pintura em todo o Portugal. Reparar torneiras, montar móveis, pendurar quadros e trocar fechaduras — preço definido e marcação online.",
+  keywords: [
+    "marido de aluguer",
+    "faz-tudo",
+    "canalizador ao domicílio",
+    "eletricista ao domicílio",
+    "montagem de móveis",
+    "reparar torneira",
+    "reparações domésticas",
+    "serviços para casa",
+    "pequenos arranjos domésticos",
+  ],
+  alternates: { canonical: "/" },
+};
 
 const POPULAR_SERVICE_SLUGS = [
   "montagem-de-moveis",
@@ -26,6 +47,11 @@ const POPULAR_SERVICE_SLUGS = [
 ];
 
 const HOME_FAQS = [
+  {
+    question: "O que é um marido de aluguer?",
+    answer:
+      "Um marido de aluguer (ou faz-tudo) é um profissional que resolve pequenas reparações e tarefas domésticas: pendurar quadros e prateleiras, montar móveis, trocar torneiras, reparar estores e fechaduras, e muito mais. No Vizinho encontra profissionais avaliados em todo o Portugal, com preço definido e marcação online.",
+  },
   {
     question: "Como funcionam os preços?",
     answer:
@@ -55,6 +81,8 @@ export default function HomePage() {
 
   return (
     <>
+      <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
+
       {/* Hero */}
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/60 to-background">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
@@ -64,11 +92,13 @@ export default function HomePage() {
               Profissionais avaliados · Preços transparentes
             </span>
             <h1 className="mt-5 text-balance text-4xl font-bold tracking-tight sm:text-5xl">
-              Serviços para casa em Portugal, marcados online
+              Marido de aluguer e serviços para casa em Portugal
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-              Encontre profissionais para reparações, montagens, canalização,
-              eletricidade, pintura, jardim e pequenos arranjos domésticos.
+              Marido de aluguer, canalizador, eletricista, pintor ou montador de
+              móveis: encontre profissionais avaliados para reparações,
+              montagens, canalização, eletricidade, pintura, jardim e pequenos
+              arranjos domésticos — com preço definido e marcação online.
             </p>
           </div>
           <div className="mx-auto mt-8 max-w-3xl">

@@ -93,3 +93,51 @@ export function localBusinessJsonLd(params: {
       }),
   };
 }
+
+// --- Brand entity (Organization + WebSite) -----------------------------------
+// The brand is "Vizinho", but people search the generic term. Declaring these
+// as alternateName helps Google associate the brand with "marido de aluguer".
+const BRAND_ALTERNATE_NAMES = [
+  "Marido de Aluguer",
+  "Faz-tudo",
+  "Serviços para casa",
+];
+
+export function organizationJsonLd(opts?: {
+  sameAs?: string[];
+  logo?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE.name,
+    alternateName: BRAND_ALTERNATE_NAMES,
+    url: SITE.url,
+    description: SITE.description,
+    email: SITE.email,
+    telephone: SITE.phone,
+    areaServed: { "@type": "Country", name: "Portugal" },
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: SITE.email,
+      telephone: SITE.phone,
+      areaServed: "PT",
+      availableLanguage: ["Portuguese"],
+    },
+    ...(opts?.logo && { logo: absoluteUrl(opts.logo) }),
+    ...(opts?.sameAs && opts.sameAs.length > 0 && { sameAs: opts.sameAs }),
+  };
+}
+
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    alternateName: BRAND_ALTERNATE_NAMES,
+    url: SITE.url,
+    inLanguage: "pt-PT",
+    publisher: { "@type": "Organization", name: SITE.name, url: SITE.url },
+  };
+}

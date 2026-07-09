@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { Wrench } from "lucide-react";
+import { LogoMark } from "@/components/site/logo-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,9 +107,7 @@ export default function LoginPage() {
           href="/"
           className="mb-6 flex items-center justify-center gap-2 text-xl font-bold"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Wrench className="h-4 w-4" />
-          </span>
+          <LogoMark priority />
           {SITE.name}
         </Link>
         <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">

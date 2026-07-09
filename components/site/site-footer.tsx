@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Wrench } from "lucide-react";
+import { LogoMark } from "@/components/site/logo-mark";
 import { SITE } from "@/lib/site";
 import { CATALOG } from "@/lib/data/catalog";
 import { getPopularLocations } from "@/lib/data/locations";
@@ -11,9 +11,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Link href="/" className="flex items-center gap-2 font-bold">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Wrench className="h-4 w-4" />
-            </span>
+            <LogoMark className="h-7 w-7" />
             {SITE.name}
           </Link>
           <p className="mt-3 text-sm text-muted-foreground">

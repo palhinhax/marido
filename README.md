@@ -1,271 +1,104 @@
-# Next.js SaaS Template
+# Vizinho — Marketplace de serviços para casa (Portugal)
 
-A production-grade, full-stack SaaS template built with modern technologies.
+Plataforma de serviços domésticos (marido de aluguer, canalização, eletricidade,
+montagens, pintura, casa inteligente e jardim) para Portugal. Os clientes pedem
+serviços com preço definido; os profissionais registam-se, definem a sua
+disponibilidade e recebem pedidos.
 
-## 🚀 Tech Stack
+Construído sobre Next.js 14 (App Router), TypeScript, Prisma + PostgreSQL,
+Auth.js (NextAuth v5), Tailwind CSS e Radix UI.
 
-- **Framework:** Next.js 14 (App Router) with TypeScript
-- **Database:** PostgreSQL with Prisma ORM
-- **Authentication:** Auth.js (NextAuth) with Credentials Provider
-- **State Management:** TanStack React Query
-- **UI Components:** shadcn/ui + Tailwind CSS
-- **Form Handling:** React Hook Form + Zod
-- **Testing:** Jest + React Testing Library + MSW
-- **Code Quality:** ESLint + Prettier + Husky
-
-## 📁 Project Structure
-
-```
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   │   ├── auth/         # Auth endpoints
-│   │   └── posts/        # Posts CRUD API
-│   ├── auth/             # Auth pages (login, register)
-│   └── dashboard/        # Protected dashboard
-├── components/            # UI Components
-│   └── ui/               # shadcn/ui components
-├── features/             # Feature modules
-│   └── posts/            # Posts feature
-│       ├── api/          # API client functions
-│       ├── components/   # Feature components
-│       ├── hooks/        # React Query hooks
-│       └── schemas/      # Zod schemas
-├── lib/                  # Utilities
-│   ├── api/              # API client layer
-│   └── auth/             # Auth.js configuration
-├── prisma/               # Database schema & migrations
-└── tests/                # Test files
-    ├── mocks/            # MSW handlers
-    └── unit/             # Unit tests
-```
-
-## 🏁 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm
-- PostgreSQL database
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/next-prisma-saas-template.git
-   cd next-prisma-saas-template
-   ```
-
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your database URL and auth secret:
-   ```env
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/saas_template"
-   AUTH_SECRET="your-secret-key-here"
-   ```
-
-4. Run database migrations:
-   ```bash
-   pnpm db:migrate
-   ```
-
-5. (Optional) Seed the database:
-   ```bash
-   pnpm db:seed
-   ```
-
-6. Start the development server:
-   ```bash
-   pnpm dev
-   ```
-
-Visit [http://localhost:3000](http://localhost:3000) to see the app.
-
-## 📜 Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start development server |
-| `pnpm build` | Build for production |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm test` | Run tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm test:coverage` | Run tests with coverage |
-| `pnpm format` | Format code with Prettier |
-| `pnpm typecheck` | Run TypeScript type checking |
-| `pnpm db:migrate` | Run database migrations |
-| `pnpm db:seed` | Seed the database |
-| `pnpm db:studio` | Open Prisma Studio |
-
-## 🔐 Authentication
-
-The template uses Auth.js with a Credentials provider for email/password authentication.
-
-### Demo Credentials
-
-After seeding the database:
-- Email: `demo@example.com`
-- Password: `password123`
-
-### Protected Routes
-
-Routes under `/dashboard` are protected and require authentication. The middleware automatically redirects unauthenticated users to the login page.
-
-## 📝 API Endpoints
-
-### Posts API
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/api/posts` | List all posts | No |
-| GET | `/api/posts/:id` | Get a single post | No |
-| POST | `/api/posts` | Create a post | Yes |
-| PATCH | `/api/posts/:id` | Update a post | Yes (owner only) |
-| DELETE | `/api/posts/:id` | Delete a post | Yes (owner only) |
-
-### Example Usage
-
-```typescript
-// Using React Query hooks
-import { usePosts, useCreatePost } from "@/features/posts";
-
-function PostsList() {
-  const { data: posts, isLoading } = usePosts();
-  const createPost = useCreatePost();
-
-  const handleCreate = async () => {
-    await createPost.mutateAsync({
-      title: "New Post",
-      content: "Post content here",
-    });
-  };
-
-  // ...
-}
-```
-
-## 🧪 Testing
-
-The template includes Jest, React Testing Library, and MSW for testing.
-
-### Running Tests
+## Arranque rápido
 
 ```bash
-# Run all tests
-pnpm test
+pnpm install
 
-# Run in watch mode
-pnpm test:watch
+# 1. Configurar variáveis de ambiente
+cp .env.example .env
+#   - defina DATABASE_URL para o seu PostgreSQL
+#   - gere AUTH_SECRET:  openssl rand -base64 32
 
-# Run with coverage
-pnpm test:coverage
+# 2. Criar o schema e popular dados de exemplo
+pnpm db:push        # aplica o schema Prisma à base de dados
+pnpm db:seed        # cria categorias, serviços, localidades, profissionais e pedidos
+
+# 3. Arrancar
+pnpm dev            # http://localhost:3000
 ```
 
-### Test Structure
+### Contas de demonstração (password: `password123`)
 
-- `tests/unit/` - Unit tests for components and hooks
-- `tests/mocks/` - MSW handlers for API mocking
+| Papel        | Email                | Vai para        |
+| ------------ | -------------------- | --------------- |
+| Admin        | `admin@vizinho.pt`   | `/admin`        |
+| Cliente      | `cliente@vizinho.pt` | `/dashboard`    |
+| Profissional | `joao@vizinho.pt`    | `/profissional` |
 
-## 🎨 UI Components
+## Estrutura
 
-The template includes these shadcn/ui components:
-
-- **Button** - Various button styles and sizes
-- **Input** - Text input with validation support
-- **Card** - Content container with header/footer
-- **Dialog** - Modal dialogs
-- **Label** - Form labels
-- **Spinner** - Loading indicator
-- **Toast** - Toast notifications
-
-### Using Components
-
-```tsx
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
-function Example() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Card</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Button>Click me</Button>
-      </CardContent>
-    </Card>
-  );
-}
+```
+app/
+  (marketing)/            Páginas públicas com header/footer (SEO)
+    page.tsx              Homepage
+    servicos/…            Categorias e páginas de serviço
+    [roleSlug]/[locationSlug]/   Landing pages SEO (ex.: /canalizador/lisboa)
+    marcar/[serviceSlug]/        Fluxo de marcação (BookingWizard)
+    pedido/[reference]/          Confirmação do pedido
+    profissionais/[slug]/        Perfil público do profissional
+    como-funciona, para-profissionais, termos, privacidade, ajuda, contactos
+  login, registar, registar/profissional     Autenticação
+  dashboard/…             Área de cliente
+  profissional/…          Área de profissional (pedidos, disponibilidade, serviços, áreas…)
+  admin/…                 Administração
+  sitemap.ts, robots.ts   SEO
+components/               UI partilhada (cards, badges, SEO, dashboard shell…)
+features/
+  booking/                Wizard, matching e server actions de marcação
+  professional/           Grelha de disponibilidade, gestão de perfil/serviços/áreas
+  client/                 Ações do cliente (cancelar, reagendar, avaliar)
+  admin/                  Ações de administração (aprovar, moderar, preços)
+lib/
+  data/catalog.ts         Catálogo de categorias/serviços (fonte única)
+  data/locations.ts       Distritos e concelhos de Portugal
+  availability.ts         Cálculo de slots + conversão grelha↔regras
+  seo.ts, format.ts       JSON-LD, formatação PT-PT
+prisma/                   schema.prisma + seed.ts
 ```
 
-## 🔄 Form Validation
+## Funcionalidades
 
-Forms use React Hook Form with Zod for end-to-end validation:
+- **Catálogo & SEO**: 7 categorias, ~35 serviços, páginas de serviço, categoria e
+  landing pages programáticas por `serviço/profissão × localidade` (220+ páginas
+  pré-renderizadas), com metadata dinâmica, canonical, Open Graph e JSON-LD
+  (LocalBusiness, Service, FAQPage, BreadcrumbList).
+- **Marcação**: wizard de 5 passos (localização → detalhes → data/hora → contacto
+  → resumo), com matching por serviço + localização + disponibilidade, e modos
+  "primeiro disponível" ou "escolher profissional".
+- **Profissionais**: onboarding, grelha semanal de disponibilidade (clique/arrasto,
+  copiar dias, bloquear datas), gestão de serviços e áreas, aceitar/recusar pedidos.
+- **Cliente**: dashboard, histórico, cancelar/reagendar, avaliar após conclusão.
+- **Admin**: aprovação de profissionais, gestão de serviços/preços, moderação de
+  avaliações, visão geral de pedidos e utilizadores.
+- **Papéis** (`CLIENT` / `PROFESSIONAL` / `ADMIN`) com redirecionamento por papel
+  e proteção de rotas via middleware.
 
-```typescript
-import { postSchema, type PostFormData } from "@/features/posts/schemas";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+## Notas / próximos passos
 
-const form = useForm<PostFormData>({
-  resolver: zodResolver(postSchema),
-});
-```
+- **Pagamentos**: arquitetura preparada (campos `paymentStatus`), integração Stripe
+  por fazer. Ver `Booking.paymentStatus`.
+- **Emails**: `lib/notifications.ts` cria notificações in-app e regista o email que
+  seria enviado (stub). Ligar a um fornecedor (Resend/SendGrid) — ver `sendEmail`.
+- **Upload de fotos**: o uploader do wizard faz pré-visualização local; ligar a
+  armazenamento (S3/UploadThing) e passar os URLs para a marcação.
 
-## 🌙 Dark Mode
+## Scripts
 
-The template supports dark mode out of the box. Add the `dark` class to the `<html>` element to enable it.
-
-## 📦 Database Models
-
-### User
-```prisma
-model User {
-  id           String   @id @default(cuid())
-  name         String?
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  posts        Post[]
-}
-```
-
-### Post
-```prisma
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-```
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import the project in Vercel
-3. Set environment variables:
-   - `DATABASE_URL`
-   - `AUTH_SECRET`
-4. Deploy!
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-Built with ❤️ using Next.js, Prisma, and shadcn/ui
+| Comando          | Descrição                   |
+| ---------------- | --------------------------- |
+| `pnpm dev`       | Servidor de desenvolvimento |
+| `pnpm build`     | Build de produção           |
+| `pnpm db:push`   | Aplicar schema Prisma       |
+| `pnpm db:seed`   | Popular dados de exemplo    |
+| `pnpm db:studio` | Prisma Studio               |
+| `pnpm typecheck` | Verificação de tipos        |
+| `pnpm lint`      | ESLint                      |

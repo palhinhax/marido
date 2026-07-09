@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import {
   Upload,
   ShieldCheck,
   Loader2,
+  UserCheck,
 } from "lucide-react";
 import type { PriceType } from "@prisma/client";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ interface Props {
     requiresPhotos: boolean;
   };
   initialLocationSlug?: string;
+  isLoggedIn?: boolean;
   defaultContact?: {
     name?: string | null;
     email?: string | null;
@@ -60,6 +62,7 @@ const STEPS = ["Localização", "Detalhes", "Data e hora", "Contacto", "Resumo"]
 export function BookingWizard({
   service,
   initialLocationSlug,
+  isLoggedIn = false,
   defaultContact,
 }: Props) {
   const router = useRouter();
@@ -112,6 +115,12 @@ export function BookingWizard({
         if (cancelled) return;
         setAvailability(res);
         setSelectedDay(res.aggregated[0]?.dateISO ?? null);
+        // Clear any prior professional selection when the area changes.
+        if (res.professionals.length === 0) {
+          setSelectedProId(null);
+          set("professionalId", undefined);
+          set("assignmentMode", "FIRST_AVAILABLE");
+        }
       })
       .finally(() => !cancelled && setLoadingSlots(false));
     return () => {
@@ -172,11 +181,30 @@ export function BookingWizard({
 
   const municipalities =
     DISTRICTS.find((d) => d.name === form.district)?.municipalities ?? [];
-  const currentDay = availability?.aggregated.find(
-    (d) => d.dateISO === selectedDay
-  );
+
+  // Generic preferred-time slots, used when there are no professionals / no real
+  // availability yet. The client still books; the admin assigns a professional.
+  const fallbackDays = useMemo(() => buildFallbackDays(14), []);
+
+  const hasRealSlots =
+    !!availability && availability.aggregated.some((d) => d.slots.length > 0);
+  // Fall back to a generic picker whenever we have a response but no real slots
+  // (no professionals in the area yet, or none with free time).
+  const usingFallback = !!availability && !hasRealSlots;
+  const displayDays = usingFallback
+    ? fallbackDays
+    : (availability?.aggregated ?? []);
+
+  const effectiveDay =
+    selectedDay && displayDays.some((d) => d.dateISO === selectedDay)
+      ? selectedDay
+      : (displayDays[0]?.dateISO ?? null);
+  const currentDay = displayDays.find((d) => d.dateISO === effectiveDay);
   const daySlots = currentDay?.slots.filter(
-    (s) => !selectedProId || s.professionalIds.includes(selectedProId)
+    (s) =>
+      usingFallback ||
+      !selectedProId ||
+      s.professionalIds.includes(selectedProId)
   );
 
   return (
@@ -352,33 +380,35 @@ export function BookingWizard({
                 subtitle="Escolha um horário disponível de um profissional na sua zona."
               />
 
-              {/* Assignment mode */}
-              <div className="grid grid-cols-2 gap-2">
-                {(
-                  [
-                    ["FIRST_AVAILABLE", "Primeiro disponível"],
-                    ["CHOOSE", "Escolher profissional"],
-                  ] as const
-                ).map(([mode, label]) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => {
-                      set("assignmentMode", mode);
-                      setSelectedProId(null);
-                      set("professionalId", undefined);
-                    }}
-                    className={cn(
-                      "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
-                      form.assignmentMode === mode
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {/* Assignment mode — only when real professionals are available */}
+              {!loadingSlots && !usingFallback && availability && (
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      ["FIRST_AVAILABLE", "Primeiro disponível"],
+                      ["CHOOSE", "Escolher profissional"],
+                    ] as const
+                  ).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        set("assignmentMode", mode);
+                        setSelectedProId(null);
+                        set("professionalId", undefined);
+                      }}
+                      className={cn(
+                        "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                        form.assignmentMode === mode
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {loadingSlots && (
                 <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -387,18 +417,22 @@ export function BookingWizard({
                 </div>
               )}
 
-              {!loadingSlots &&
-                availability &&
-                availability.professionals.length === 0 && (
-                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                    Ainda não temos profissionais disponíveis para este serviço
-                    em {form.municipality}. Pode continuar e a nossa equipa
-                    procura um profissional para si.
-                  </div>
-                )}
+              {/* No real availability yet — client still picks a preferred time */}
+              {!loadingSlots && usingFallback && (
+                <div className="rounded-lg border border-warm/30 bg-warm/10 p-4 text-sm">
+                  <p className="font-medium">Escolha o horário que prefere</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Estamos a alargar a rede de profissionais em{" "}
+                    {form.municipality}. Indique o horário que lhe dá jeito e a
+                    nossa equipa trata de encontrar um profissional e confirmar
+                    consigo.
+                  </p>
+                </div>
+              )}
 
               {/* Choose professional list */}
               {!loadingSlots &&
+                !usingFallback &&
                 form.assignmentMode === "CHOOSE" &&
                 availability &&
                 availability.professionals.length > 0 && (
@@ -443,52 +477,50 @@ export function BookingWizard({
                 )}
 
               {/* Day + slot picker */}
-              {!loadingSlots &&
-                availability &&
-                availability.aggregated.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {availability.aggregated.map((d) => (
+              {!loadingSlots && displayDays.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {displayDays.map((d) => (
+                      <button
+                        key={d.dateISO}
+                        type="button"
+                        onClick={() => setSelectedDay(d.dateISO)}
+                        className={cn(
+                          "shrink-0 rounded-lg border px-3 py-2 text-xs font-medium capitalize",
+                          effectiveDay === d.dateISO
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "hover:bg-muted"
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {daySlots && daySlots.length > 0 ? (
+                      daySlots.map((s) => (
                         <button
-                          key={d.dateISO}
+                          key={s.startISO}
                           type="button"
-                          onClick={() => setSelectedDay(d.dateISO)}
+                          onClick={() => set("scheduledStartISO", s.startISO)}
                           className={cn(
-                            "shrink-0 rounded-lg border px-3 py-2 text-xs font-medium capitalize",
-                            selectedDay === d.dateISO
-                              ? "border-primary bg-primary/5 text-primary"
+                            "rounded-lg border py-2 text-sm font-medium",
+                            form.scheduledStartISO === s.startISO
+                              ? "border-primary bg-primary text-primary-foreground"
                               : "hover:bg-muted"
                           )}
                         >
-                          {d.label}
+                          {s.label}
                         </button>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {daySlots && daySlots.length > 0 ? (
-                        daySlots.map((s) => (
-                          <button
-                            key={s.startISO}
-                            type="button"
-                            onClick={() => set("scheduledStartISO", s.startISO)}
-                            className={cn(
-                              "rounded-lg border py-2 text-sm font-medium",
-                              form.scheduledStartISO === s.startISO
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "hover:bg-muted"
-                            )}
-                          >
-                            {s.label}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="col-span-full text-sm text-muted-foreground">
-                          Sem horários neste dia. Experimente outro dia.
-                        </p>
-                      )}
-                    </div>
+                      ))
+                    ) : (
+                      <p className="col-span-full text-sm text-muted-foreground">
+                        Sem horários neste dia. Experimente outro dia.
+                      </p>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
               {isQuote && (
                 <label className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
@@ -513,6 +545,17 @@ export function BookingWizard({
                 title="Os seus contactos"
                 subtitle="Para o profissional o poder contactar."
               />
+              {isLoggedIn && (
+                <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                  <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Sessão iniciada como{" "}
+                    <strong>{form.clientName || form.clientEmail}</strong>. Os
+                    seus dados já estão preenchidos — pode editá-los se este
+                    pedido for para outra pessoa.
+                  </span>
+                </div>
+              )}
               <Field label="Nome">
                 <Input
                   value={form.clientName ?? ""}
@@ -659,6 +702,44 @@ export function BookingWizard({
       </aside>
     </div>
   );
+}
+
+// Generic preferred-time slots for the next `numDays` days (from tomorrow),
+// business hours 08:00–18:00. Shaped like the aggregated availability so the
+// picker renders identically; `professionalIds` is empty (admin will assign).
+function buildFallbackDays(numDays: number) {
+  const labelFmt = new Intl.DateTimeFormat("pt-PT", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  });
+  const days: {
+    dateISO: string;
+    label: string;
+    slots: { startISO: string; label: string; professionalIds: string[] }[];
+  }[] = [];
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  for (let i = 1; i <= numDays; i++) {
+    const date = new Date(base);
+    date.setDate(date.getDate() + i);
+    const slots = [];
+    for (let h = 8; h <= 18; h++) {
+      const start = new Date(date);
+      start.setHours(h, 0, 0, 0);
+      slots.push({
+        startISO: start.toISOString(),
+        label: `${String(h).padStart(2, "0")}:00`,
+        professionalIds: [] as string[],
+      });
+    }
+    days.push({
+      dateISO: date.toISOString().slice(0, 10),
+      label: labelFmt.format(date),
+      slots,
+    });
+  }
+  return days;
 }
 
 // --- small presentational helpers -------------------------------------------

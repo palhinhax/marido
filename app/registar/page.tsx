@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Wrench } from "lucide-react";
 import { RegisterForm } from "@/components/auth/register-form";
+import { LogoMark } from "@/components/site/logo-mark";
 import { SITE } from "@/lib/site";
 
 export const metadata = { title: "Criar conta" };
@@ -13,9 +13,7 @@ export default function RegisterPage() {
           href="/"
           className="mb-6 flex items-center justify-center gap-2 text-xl font-bold"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Wrench className="h-4 w-4" />
-          </span>
+          <LogoMark priority />
           {SITE.name}
         </Link>
         <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">

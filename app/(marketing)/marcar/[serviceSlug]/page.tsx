@@ -44,6 +44,7 @@ export default async function MarcarPage({
           requiresPhotos: service.requiresPhotos,
         }}
         initialLocationSlug={searchParams.loc}
+        isLoggedIn={!!user}
         defaultContact={
           user ? { name: user.name, email: user.email } : undefined
         }

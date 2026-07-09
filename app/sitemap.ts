@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/site";
 import { CATALOG, ALL_SERVICES, SEO_ROLES } from "@/lib/data/catalog";
-import { ALL_MUNICIPALITIES } from "@/lib/data/locations";
+import {
+  ALL_MUNICIPALITIES,
+  getServiceCityLocations,
+} from "@/lib/data/locations";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = SITE.url;
+  const lastModified = new Date();
   const staticPages = [
     "",
     "/servicos",
@@ -43,5 +47,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
   );
 
-  return [...staticPages, ...categoryPages, ...servicePages, ...landingPages];
+  const serviceCities = getServiceCityLocations();
+  const serviceCityPages = ALL_SERVICES.flatMap((s) =>
+    serviceCities.map((loc) => ({
+      url: `${base}/servicos/${s.category.slug}/${s.slug}/${loc.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }))
+  );
+
+  return [
+    ...staticPages,
+    ...categoryPages,
+    ...servicePages,
+    ...landingPages,
+    ...serviceCityPages,
+  ].map((entry) => ({ lastModified, ...entry }));
 }

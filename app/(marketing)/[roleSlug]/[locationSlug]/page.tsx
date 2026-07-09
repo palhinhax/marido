@@ -61,11 +61,17 @@ export function generateMetadata({
   const role = getSeoRole(params.roleSlug);
   const loc = getLocationBySlug(params.locationSlug);
   if (!role || !loc) return {};
-  const title = `${role.h1} em ${loc.name} | Reparações em Casa com Preço Definido`;
-  const description = `Peça serviços de ${role.label.toLowerCase()} em ${loc.name}. ${role.intro} Marcação online rápida com profissionais avaliados.`;
+  const title = `${role.h1} em ${loc.name}`;
+  const description = `${role.label} em ${loc.name}: ${role.intro} Preço definido e marcação online, com profissionais avaliados em ${loc.district.name}.`;
   return {
     title,
     description,
+    keywords: [
+      `${role.label.toLowerCase()} ${loc.name.toLowerCase()}`,
+      `marido de aluguer ${loc.name.toLowerCase()}`,
+      `${role.label.toLowerCase()} ao domicílio`,
+      role.label.toLowerCase(),
+    ],
     alternates: { canonical: `/${role.slug}/${loc.slug}` },
     openGraph: { title, description },
   };

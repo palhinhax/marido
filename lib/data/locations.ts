@@ -169,3 +169,27 @@ export function getPopularLocations(): ResolvedLocation[] {
     (l): l is ResolvedLocation => Boolean(l)
   );
 }
+
+// Big cities with enough demand to justify dedicated service × city SEO pages
+// (e.g. /servicos/canalizacao/trocar-torneira/lisboa). Kept curated to avoid
+// thin, near-duplicate pages across every small municipality.
+export const SEO_SERVICE_CITY_SLUGS = [
+  "lisboa",
+  "porto",
+  "sintra",
+  "cascais",
+  "oeiras",
+  "loures",
+  "vila-nova-de-gaia",
+  "braga",
+  "coimbra",
+  "almada",
+  "setubal",
+  "faro",
+];
+
+export function getServiceCityLocations(): ResolvedLocation[] {
+  return SEO_SERVICE_CITY_SLUGS.map((s) => getLocationBySlug(s)).filter(
+    (l): l is ResolvedLocation => Boolean(l)
+  );
+}

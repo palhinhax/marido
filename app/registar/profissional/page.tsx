@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Wrench, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { RegisterForm } from "@/components/auth/register-form";
+import { LogoMark } from "@/components/site/logo-mark";
 import { SITE } from "@/lib/site";
 
 export const metadata = { title: "Registo de profissional" };
@@ -18,9 +19,7 @@ export default function RegisterProfessionalPage() {
         {/* Pitch */}
         <div className="hidden flex-col justify-center lg:flex">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Wrench className="h-4 w-4" />
-            </span>
+            <LogoMark priority />
             {SITE.name}
           </Link>
           <h2 className="mt-6 text-3xl font-bold">Trabalhe connosco</h2>

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
-  Wrench,
   Menu,
   X,
   LogOut,
@@ -22,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/site/logo-mark";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -108,9 +108,7 @@ export function DashboardShell({
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <Link href="/" className="flex items-center gap-2 font-bold">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Wrench className="h-4 w-4" />
-            </span>
+            <LogoMark className="h-7 w-7" priority />
             <span className="hidden sm:inline">{SITE.name}</span>
           </Link>
           <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -131,7 +129,7 @@ export function DashboardShell({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl">
+      <div className="flex">
         {/* Sidebar */}
         {open && (
           <div
@@ -165,7 +163,9 @@ export function DashboardShell({
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );
