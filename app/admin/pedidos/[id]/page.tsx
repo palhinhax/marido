@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { BookingStatusBadge } from "@/components/status-badge";
 import { BookingTimeline } from "@/components/booking-timeline";
 import { AdminBookingActions } from "@/features/admin/components/booking-actions";
+import { BookingPhotoGallery } from "@/features/admin/components/booking-photo-gallery";
 import {
   priceLabel,
   euros,
@@ -115,19 +116,7 @@ export default async function AdminBookingDetail({
               {booking.clientDescription}
             </p>
           </div>
-          {booking.photos.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {booking.photos.map((p) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={p.id}
-                  src={p.url}
-                  alt=""
-                  className="h-20 w-20 rounded-md object-cover"
-                />
-              ))}
-            </div>
-          )}
+          <BookingPhotoGallery photos={booking.photos} />
         </section>
 
         <section className="space-y-6">

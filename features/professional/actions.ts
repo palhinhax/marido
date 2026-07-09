@@ -63,6 +63,20 @@ export async function updateProfessionalProfile(
   return { ok: true };
 }
 
+// Persist just the profile photo immediately (called right after upload).
+export async function updateProfessionalPhoto(photoUrl: string | null) {
+  const id = await requireProfessionalId();
+  const pro = await prisma.professionalProfile.update({
+    where: { id },
+    data: { photoUrl: photoUrl || null },
+    select: { slug: true },
+  });
+  revalidatePath("/profissional/perfil");
+  revalidatePath("/profissional");
+  revalidatePath(`/profissionais/${pro.slug}`);
+  return { ok: true };
+}
+
 // --- Services ----------------------------------------------------------------
 export async function setProfessionalServices(serviceIds: string[]) {
   const id = await requireProfessionalId();

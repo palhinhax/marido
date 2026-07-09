@@ -4,7 +4,9 @@ import type { BookingStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BookingStatusBadge } from "@/components/status-badge";
 import { AdminBookingRowActions } from "@/features/admin/components/booking-row-actions";
+import { FacebookShareButton } from "@/features/admin/components/facebook-share-button";
 import { euros, formatDateTime } from "@/lib/format";
+import { buildShareCaption, isOpenRequest } from "@/lib/share";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +169,18 @@ export default async function AdminBookingsPage({
                 </td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-3">
+                    {isOpenRequest(b.status) && (
+                      <FacebookShareButton
+                        reference={b.reference}
+                        caption={buildShareCaption({
+                          reference: b.reference,
+                          municipality: b.municipality,
+                          district: b.district,
+                          urgency: b.urgency,
+                          serviceName: b.service.name,
+                        })}
+                      />
+                    )}
                     <AdminBookingRowActions
                       bookingId={b.id}
                       status={b.status}

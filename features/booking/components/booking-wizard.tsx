@@ -59,6 +59,14 @@ interface Props {
 
 const STEPS = ["Localização", "Detalhes", "Data e hora", "Contacto", "Resumo"];
 
+interface BookingDraft {
+  serviceSlug: string;
+  step: number;
+  form: Partial<BookingInput>;
+  selectedDay: string | null;
+  selectedProId: string | null;
+}
+
 export function BookingWizard({
   service,
   initialLocationSlug,
@@ -68,7 +76,9 @@ export function BookingWizard({
   const router = useRouter();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const draftKey = `booking-draft:${service.slug}`;
 
   const initialLoc = initialLocationSlug
     ? getLocationBySlug(initialLocationSlug)
@@ -100,6 +110,58 @@ export function BookingWizard({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
+
+  function saveDraft(next?: Partial<BookingDraft>) {
+    if (typeof window === "undefined") return;
+    const draft: BookingDraft = {
+      serviceSlug: service.slug,
+      step,
+      form,
+      selectedDay,
+      selectedProId,
+      ...next,
+    };
+    window.sessionStorage.setItem(draftKey, JSON.stringify(draft));
+  }
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(draftKey);
+      if (!raw) {
+        setDraftLoaded(true);
+        return;
+      }
+
+      const draft = JSON.parse(raw) as Partial<BookingDraft>;
+      if (draft.serviceSlug !== service.slug) {
+        setDraftLoaded(true);
+        return;
+      }
+
+      if (draft.form) {
+        setForm((current) => ({
+          ...current,
+          ...draft.form,
+          serviceSlug: service.slug,
+        }));
+      }
+      if (typeof draft.step === "number") {
+        setStep(Math.min(Math.max(draft.step, 0), STEPS.length - 1));
+      }
+      setSelectedDay(draft.selectedDay ?? null);
+      setSelectedProId(draft.selectedProId ?? null);
+    } catch {
+      window.sessionStorage.removeItem(draftKey);
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, [draftKey, service.slug]);
+
+  useEffect(() => {
+    if (!draftLoaded || submitting) return;
+    saveDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftLoaded, form, step, selectedDay, selectedProId, submitting]);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -160,6 +222,7 @@ export function BookingWizard({
     try {
       const res = await createBooking(form as BookingInput);
       if (res.ok && res.reference) {
+        window.sessionStorage.removeItem(draftKey);
         router.push(`/pedido/${res.reference}`);
       } else {
         toast({
@@ -700,6 +763,7 @@ export function BookingWizard({
           </ul>
           <Link
             href={`/servicos/${service.categorySlug}/${service.slug}`}
+            onClick={() => saveDraft()}
             className="mt-4 block text-xs text-primary hover:underline"
           >
             Ver detalhes do serviço

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { ImageUploader } from "@/components/image-uploader";
-import { updateProfessionalProfile } from "../actions";
+import { updateProfessionalProfile, updateProfessionalPhoto } from "../actions";
 
 interface ProfileData {
   displayName: string;
@@ -64,7 +64,17 @@ export function ProfileForm({
           folder="profiles"
           variant="avatar"
           value={form.photoUrl ? [form.photoUrl] : []}
-          onChange={(urls) => set("photoUrl", urls[0] ?? "")}
+          onChange={async (urls) => {
+            const url = urls[0] ?? "";
+            set("photoUrl", url);
+            // Save the photo immediately — no need to press "Guardar perfil".
+            try {
+              await updateProfessionalPhoto(url || null);
+              toast({ title: url ? "Foto guardada" : "Foto removida" });
+            } catch {
+              toast({ title: "Erro ao guardar foto", variant: "destructive" });
+            }
+          }}
         />
       </div>
       <div className="space-y-1.5">
