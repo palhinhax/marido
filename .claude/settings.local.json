@@ -5,7 +5,9 @@
       "Bash(echo \"EXIT: $?\")",
       "Read(//c/Users/jduarte/AppData/Local/Temp/claude/c--Users-jduarte-Documents-workSpace-marido/27af96d1-dbe8-4581-ae8c-c702e6a098a5/scratchpad/**)",
       "Bash(taskkill //F //IM node.exe //T)",
-      "Bash(pnpm exec *)"
+      "Bash(pnpm exec *)",
+      "Bash(curl -sS --max-time 15 https://www.vizinho-do-lado.com/)",
+      "Bash(curl -sS -I --max-time 10 https://www.vizinho-do-lado.com/)"
     ]
   }
 }
